@@ -1,0 +1,88 @@
+
+/* ─── Admin-specific overrides ────────────────── */
+:root {
+  --clr-emerald-l: #2d7a52;
+  --clr-border-l:  rgba(107,26,42,.07);
+
+  --sidebar-w: 260px;
+  --topbar-h:  60px;
+
+  /* Admin uses tighter radius/shadow than the dine app */
+  --radius:    10px;
+  --radius-lg: 16px;
+  --shadow:    0 2px 12px rgba(28,16,24,.08);
+  --shadow-md: 0 4px 24px rgba(28,16,24,.12);
+  --shadow-lg: 0 8px 40px rgba(28,16,24,.18);
+  --trans:     0.22s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ─── Reset ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--ff-body);
+  background: var(--clr-bg-alt);
+  color: var(--clr-text);
+  min-height: 100vh;
+}
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; border: none; background: none; font-family: var(--ff-ui); }
+select, input, textarea { font-family: var(--ff-body); }
+img { display: block; }
+
+/* ═══════════════════════════════════════════════
+   LOGIN SCREEN
+════════════════════════════════════════════════ */
+#login-screen {
+  @apply fixed inset-0 flex items-center justify-center z-[1000];
+}
+.login-bg {
+  @apply absolute inset-0 bg-dark;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(107,26,42,.35) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(201,151,58,.15) 0%, transparent 55%);
+}
+.login-card {
+  @apply relative bg-bg rounded-[16px] py-10 px-8 w-full max-w-[380px] shadow-lg border border-[rgba(201,151,58,.2)];
+}
+.login-logo {
+  @apply flex flex-col items-center gap-1 mb-2;
+}
+.login-logo-en {
+  @apply font-cinzel text-[1.6rem] font-semibold tracking-[.18em] text-primary;
+}
+.login-logo-ur {
+  @apply font-['Noto_Nastaliq_Urdu',serif] text-[1.1rem] text-gold;
+  direction: rtl;
+}
+.login-subtitle {
+  @apply text-center font-ui text-[.75rem] font-medium tracking-[.12em] uppercase text-muted mb-7;
+}
+.role-tabs {
+  @apply grid grid-cols-3 gap-[6px] bg-bg-alt rounded-[10px] p-1 mb-6;
+}
+.role-tab {
+  @apply p-2 rounded-[7px] font-ui text-[.8rem] font-medium text-muted;
+  transition: all var(--trans);
+}
+.role-tab.active {
+  @apply bg-primary text-white shadow-[0_2px_8px_rgba(107,26,42,.25)];
+}
+.pin-label {
+  @apply block font-ui text-[.75rem] font-semibold tracking-[.08em] uppercase text-muted mb-2;
+}
+#pin-input {
+  @apply w-full py-3 px-4 border-[1.5px] border-border rounded-[10px] bg-white text-[1.5rem] tracking-[.3em] text-center text-text mb-5 outline-none;
+  transition: border-color var(--trans);
+}
+#pin-input:focus { @apply border-primary; }
+.login-btn {
+  @apply w-full p-[.85rem] bg-primary text-white rounded-[10px] font-ui text-[.9rem] font-semibold tracking-[.04em] flex items-center justify-center gap-2;
+  transition: background var(--trans), transform var(--trans);
+}
+.login-btn:hover { @apply bg-primary-l; }
+.login-btn:active { @apply scale-[.98]; }
+.login-error {
+  @apply text-center mt-3 text-[.82rem] text-[#c0392b] font-ui;
+}
+

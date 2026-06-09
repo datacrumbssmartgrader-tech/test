@@ -1,0 +1,39 @@
+/* ═══════════════════════════════════════════════
+   BOTTOM NAV
+════════════════════════════════════════════════ */
+.bottom-nav {
+  @apply absolute bottom-0 left-0 right-0 bg-surface border-t border-border flex flex-col z-20;
+}
+.nav-buttons {
+  @apply flex w-full items-start;
+}
+.bottom-nav[hidden] { display: none; }
+.nav-item {
+  @apply flex-1 flex flex-col items-center justify-center gap-[.2rem] bg-none border-none font-ui text-[.62rem] font-medium text-muted cursor-pointer relative py-2;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--trans);
+}
+.nav-item i { @apply text-[1.25rem]; }
+.nav-item.active { @apply text-primary; }
+.nav-item.active::before {
+  content: '';
+  @apply absolute top-0 left-1/4 right-1/4 h-[2px] bg-primary rounded-b-[2px];
+}
+.order-badge {
+  @apply absolute top-1.5 right-[calc(50%-1rem)] bg-primary text-white font-ui text-[.58rem] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-[3px] border-2 border-surface;
+}
+
+/* ═══════════════════════════════════════════════
+   FLOATING CALL WAITER BTN
+════════════════════════════════════════════════ */
+.waiter-float {
+  position: absolute;
+  bottom: calc(var(--nav-bottom) * 2 + env(safe-area-inset-bottom, 16px) + .75rem);
+  @apply right-[.85rem] w-[50px] h-[50px] bg-gold text-dark border-none rounded-full text-[1.3rem] flex items-center justify-center cursor-pointer z-19;
+  box-shadow: 0 4px 20px rgba(201,151,58,.4);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--trans), box-shadow var(--trans);
+}
+.waiter-float[hidden] { display: none; }
+.waiter-float:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(201,151,58,.3); }
+

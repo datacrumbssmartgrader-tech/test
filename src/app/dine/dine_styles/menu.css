@@ -1,0 +1,202 @@
+/* ═══════════════════════════════════════════════
+   MENU HEADER BLOCK (menu-top + cat-tabs)
+════════════════════════════════════════════════ */
+.menu-header-block {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10;
+}
+
+/* ═══════════════════════════════════════════════
+   MENU TOP — dark hero (header + search)
+════════════════════════════════════════════════ */
+.menu-top {
+  position: relative;
+  flex-shrink: 0;
+  background-color: #1C1018;
+  background-image: url('/bg.jpeg');
+  background-size: cover;
+  background-position: center 35%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  z-index: 2;
+  /* 💎 REMOVED transition rules so height modifications follow touch tracks instantly */
+}
+
+/* Remove old snap helper class targets entirely since inline math handles states natively */
+.menu-top.menu-top-shrunk { display: none; }
+.search-container-anim { display: none; }
+
+/* Collapses and fades out the search bar inputs during the scroll action */
+.search-container-anim.search-shrunk {
+  opacity: 0;
+  max-height: 0px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  transform: scaleY(0);
+  pointer-events: none;
+}
+
+/* Realigns header spacing alignments uniformly in compressed layout */
+.menu-top.menu-top-shrunk .app-header {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+/* Header overrides inside dark section */
+#screen-menu .app-header {
+  @apply bg-transparent border-b-0;
+}
+#screen-menu .header-logo  { @apply text-white; }
+#screen-menu .header-table {
+  @apply bg-white/18 text-white;
+}
+#screen-menu .icon-btn {
+  @apply bg-white/12 border-white/18 text-white;
+}
+#screen-menu .icon-btn:active { @apply bg-white/22; }
+
+#screen-menu .search-wrap  { @apply bg-transparent pb-[.9rem]; }
+#screen-menu .search-input {
+  @apply bg-white/10 border-white/18 text-white;
+}
+#screen-menu .search-input::placeholder { @apply text-white/45; }
+#screen-menu .search-icon  { @apply text-white/45; }
+#screen-menu .search-clear { @apply text-white/45; }
+#screen-menu .search-input:focus { @apply border-white/50; }
+
+/* ═══════════════════════════════════════════════
+   APP HEADER
+════════════════════════════════════════════════ */
+.app-header {
+  @apply shrink-0 flex items-center justify-between px-4 pt-[.85rem] pb-[.7rem] bg-surface border-b border-border relative z-10;
+}
+.header-left { @apply flex items-center gap-[.6rem]; }
+.header-logo {
+  @apply font-cinzel text-[1rem] font-semibold text-primary tracking-[.1em];
+}
+.header-table {
+  @apply bg-primary text-white font-ui text-[.65rem] font-semibold tracking-[.08em] px-[.55rem] py-[.2rem] rounded-full;
+}
+.header-right { @apply flex items-center gap-[.5rem]; }
+.icon-btn {
+  @apply relative w-10 h-10 flex items-center justify-center bg-bg border border-border rounded-full text-[1.1rem] text-text cursor-pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--trans);
+}
+.icon-btn:active { @apply bg-bg-alt; }
+.cart-badge {
+  @apply absolute -top-[3px] -right-[3px] bg-primary text-white font-ui text-[.6rem] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1 border-2 border-surface;
+}
+
+/* ═══════════════════════════════════════════════
+   SEARCH BAR
+════════════════════════════════════════════════ */
+.search-wrap {
+  @apply shrink-0 relative px-4 pt-[.7rem] pb-2 bg-surface;
+}
+.search-icon {
+  @apply absolute left-[1.85rem] top-1/2 -translate-y-1/2 text-muted text-[1rem] pointer-events-none;
+}
+.search-input {
+  @apply w-full bg-bg border border-border rounded-full py-[.6rem] px-[2.4rem] font-ui text-[.88rem] text-text outline-none;
+  transition: border-color var(--trans);
+}
+.search-input:focus { @apply border-primary; }
+.search-input::placeholder { @apply text-muted; }
+.search-clear {
+  @apply absolute right-[1.85rem] top-1/2 -translate-y-1/2 bg-none border-none text-muted text-[1rem] cursor-pointer flex items-center justify-center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════
+   CATEGORY TABS
+════════════════════════════════════════════════ */
+.cat-tabs-wrap {
+  @apply shrink-0 bg-surface border-b border-border overflow-hidden;
+}
+.cat-tabs {
+  @apply flex gap-[.3rem] overflow-x-auto pt-2 px-3 pb-[.6rem];
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cat-tabs::-webkit-scrollbar { display: none; }
+.cat-tab {
+  @apply shrink-0 bg-bg border border-border rounded-full font-ui text-[.78rem] font-medium text-muted px-[.9rem] py-[.35rem] cursor-pointer whitespace-nowrap;
+  transition: all var(--trans);
+  -webkit-tap-highlight-color: transparent;
+}
+.cat-tab.active {
+  @apply bg-primary border-primary text-white;
+}
+
+/* ═══════════════════════════════════════════════
+   MENU GRID
+════════════════════════════════════════════════ */
+.menu-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: .75rem .75rem calc(var(--nav-bottom) + 1rem);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.menu-scroll::-webkit-scrollbar { display: none; }
+.menu-grid {
+  @apply grid grid-cols-2 gap-[.65rem];
+}
+
+/* Item card */
+.item-card {
+  @apply bg-surface rounded overflow-hidden shadow cursor-pointer flex flex-col;
+  transition: transform var(--trans);
+  -webkit-tap-highlight-color: transparent;
+}
+.item-card:active { @apply scale-[.97]; }
+.item-card.unavailable { @apply opacity-50 pointer-events-none; }
+.item-card-img-wrap {
+  @apply relative aspect-4/3 overflow-hidden bg-bg-alt;
+}
+.item-card-img {
+  @apply w-full h-full object-cover;
+  transition: transform .4s ease;
+}
+.item-card:hover .item-card-img { @apply scale-[1.04]; }
+.item-card-tag {
+  @apply absolute top-2 left-2 bg-emerald text-white font-ui text-[.6rem] font-bold tracking-[.06em] uppercase px-[.45rem] py-[.15rem] rounded-[4px];
+}
+.item-card-tag.sold-out { @apply bg-muted; }
+.item-card-body {
+  @apply pt-[.55rem] px-[.6rem] pb-[.6rem] flex-1 flex flex-col gap-[.25rem];
+}
+.item-card-name {
+  @apply font-ui text-[.82rem] font-semibold text-text leading-[1.3] line-clamp-2;
+}
+.item-card-desc {
+  @apply font-body text-[.7rem] text-muted leading-[1.4] line-clamp-2;
+}
+.item-card-footer {
+  @apply flex items-center justify-between mt-auto pt-[.4rem];
+}
+.item-card-price {
+  @apply font-ui text-[.82rem] font-bold text-primary;
+}
+.item-add-btn {
+  @apply w-[26px] h-[26px] bg-primary text-white border-none rounded-full flex items-center justify-center text-[.9rem] cursor-pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--trans);
+}
+.item-add-btn:active { @apply bg-primary-d; }
+
+.no-results {
+  @apply col-span-full text-center py-12 px-4 text-muted font-ui text-[.9rem];
+}
+.no-results i { @apply text-[2.5rem] block mb-2; }
+

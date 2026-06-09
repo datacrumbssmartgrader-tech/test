@@ -1,0 +1,73 @@
+/* ═══════════════════════════════════════════════
+   LIVE ORDERS
+════════════════════════════════════════════════ */
+.orders-grid {
+  @apply grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 content-start;
+}
+.order-card {
+  @apply bg-white rounded-2xl border border-[var(--clr-border-l)] shadow overflow-hidden;
+  transition: box-shadow var(--trans);
+}
+.order-card:hover { @apply shadow-md; }
+.order-card-head {
+  @apply flex items-center gap-3 py-[.85rem] px-4 border-b border-[var(--clr-border-l)];
+}
+.order-table-badge {
+  @apply font-cinzel text-[.75rem] font-semibold bg-primary text-gold py-1 px-[.6rem] rounded-[6px] tracking-[.06em];
+}
+.order-id {
+  @apply font-ui text-[.72rem] text-muted flex-1;
+}
+.order-time {
+  @apply text-[.72rem] text-muted font-ui;
+}
+.order-card-body { @apply py-3 px-4; }
+.order-items {
+  @apply flex flex-col gap-[.35rem] mb-3;
+}
+.order-item-row {
+  @apply flex items-start gap-2 text-[.82rem];
+}
+.order-item-qty {
+  @apply font-ui text-[.75rem] font-bold text-primary min-w-[22px];
+}
+.order-item-name { @apply flex-1 text-text; }
+.order-item-price {
+  @apply font-ui text-[.75rem] text-muted whitespace-nowrap;
+}
+.order-item-note {
+  @apply text-[.75rem] text-muted italic pl-[22px];
+}
+.order-item-extras {
+  @apply text-[.75rem] text-gold-d pl-[22px];
+}
+.order-total {
+  @apply flex justify-between items-center pt-[.6rem] border-t border-[var(--clr-border-l)] text-[.82rem];
+}
+.order-total-label { @apply text-muted font-ui; }
+.order-total-amount {
+  @apply font-ui font-bold text-primary;
+}
+.order-card-foot {
+  @apply py-[.65rem] px-4 border-t border-[var(--clr-border-l)] flex items-center justify-between gap-2 bg-[rgba(251,245,230,.4)];
+}
+.order-status-btns {
+  @apply flex gap-[.4rem];
+}
+.btn-status {
+  @apply px-[.7rem] py-[.35rem] rounded-[6px] font-ui text-[.72rem] font-semibold border-[1.5px] border-transparent;
+  transition: all var(--trans);
+}
+.btn-status-next {
+  @apply bg-primary text-white;
+}
+.btn-status-next:hover { @apply bg-primary-l; }
+.btn-status-cancel {
+  @apply border-[#c0392b]/30 text-[#c0392b];
+}
+.btn-status-cancel:hover { @apply bg-[#fde8e6] border-[#c0392b]; }
+.orders-empty {
+  @apply col-span-full text-center py-12 px-4 text-muted font-ui;
+}
+.orders-empty i { @apply text-[2.5rem] block mb-3 opacity-40; }
+

@@ -1,0 +1,188 @@
+/* ═══════════════════════════════════════════════
+   DASHBOARD LAYOUT
+════════════════════════════════════════════════ */
+#dashboard {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  @apply w-[var(--sidebar-w)] min-h-screen bg-dark flex flex-col shrink-0 sticky top-0 h-screen overflow-y-auto z-[100];
+  transition: transform var(--trans);
+}
+.sidebar-brand {
+  @apply p-[1.5rem_1.25rem_1.25rem] border-b border-white/[.07] flex flex-col gap-[3px];
+}
+.sb-logo-en {
+  @apply font-cinzel text-[1.1rem] font-semibold tracking-[.18em] text-gold;
+}
+.sb-logo-ur {
+  @apply font-['Noto_Nastaliq_Urdu',serif] text-[.85rem] text-[rgba(201,151,58,.6)];
+  direction: rtl;
+}
+.sidebar-nav {
+  @apply flex-1 py-3 px-0 flex flex-col gap-[2px];
+}
+.nav-item {
+  @apply flex items-center gap-3 py-3 px-5 text-white/[.55] font-ui text-[.85rem] font-medium cursor-pointer border-l-[3px] border-transparent relative select-none;
+  transition: all var(--trans);
+}
+.nav-item i { @apply text-[1.1rem] shrink-0; }
+.nav-item:hover { @apply text-white/[.85] bg-white/[.05]; }
+.nav-item.active {
+  @apply text-gold border-gold bg-[rgba(201,151,58,.08)];
+}
+.nav-badge {
+  @apply ml-auto bg-primary text-white text-[.68rem] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1;
+}
+.nav-badge.gold { @apply bg-gold text-dark; }
+.sidebar-footer {
+  @apply p-[1rem_1.25rem] border-t border-white/[.07] flex items-center gap-3;
+}
+.sidebar-avatar, .topbar-avatar {
+  @apply w-9 h-9 rounded-full bg-primary flex items-center justify-center font-cinzel text-[.8rem] font-semibold text-gold shrink-0 border-2 border-[rgba(201,151,58,.3)];
+}
+.sidebar-user-info {
+  @apply flex-1 overflow-hidden;
+}
+.sidebar-user-name {
+  @apply block font-ui text-[.82rem] font-semibold text-white whitespace-nowrap overflow-hidden text-ellipsis;
+}
+.sidebar-user-role {
+  @apply block font-ui text-[.7rem] text-gold capitalize;
+}
+.logout-btn {
+  @apply text-white/40 text-[1.1rem] p-1 rounded-[6px];
+  transition: color var(--trans);
+}
+.logout-btn:hover { @apply text-[#e74c3c]; }
+
+/* ── Main area ── */
+/* ── Main area ── */
+#main {
+  @apply flex-1 overflow-hidden flex flex-col min-w-0;
+}
+
+/* ── Topbar (hidden on desktop) ── */
+#topbar {
+  @apply hidden items-center gap-3 px-4 h-[var(--topbar-h)] bg-dark border-b border-white/[.07] shrink-0 sticky top-0 z-[90];
+}
+#btn-hamburger {
+  @apply text-white/[.7] text-[1.25rem] p-1;
+}
+.topbar-title {
+  @apply flex-1 font-cinzel text-[.9rem] tracking-[.08em] text-gold;
+}
+.topbar-avatar { @apply ml-auto; }
+
+/* ── Sidebar overlay ── */
+#sidebar-overlay {
+  @apply hidden fixed inset-0 bg-[rgba(28,16,24,.6)] z-[99] opacity-0;
+  transition: opacity var(--trans);
+}
+#sidebar-overlay.visible { @apply opacity-100; }
+
+/* ═══════════════════════════════════════════════
+   SECTIONS
+════════════════════════════════════════════════ */
+.section {
+  @apply hidden flex-col flex-1 overflow-y-auto p-[1.75rem_2rem] gap-6;
+}
+.section.active { @apply flex; }
+
+.section-header {
+  @apply flex items-start justify-between gap-4 flex-wrap;
+}
+.section-title {
+  @apply font-cinzel text-[1.3rem] font-semibold text-primary tracking-[.04em];
+}
+.section-sub {
+  @apply text-[.82rem] text-muted mt-[3px];
+}
+.section-actions {
+  @apply flex items-center gap-2 flex-wrap;
+}
+.filter-select {
+  @apply py-2 px-3 border-[1.5px] border-border rounded bg-white text-[.82rem] text-text outline-none cursor-pointer;
+  transition: border-color var(--trans);
+}
+.filter-select:focus { @apply border-primary; }
+.filter-input {
+  @apply py-2 px-3 border-[1.5px] border-border rounded bg-white text-[.82rem] text-text outline-none;
+  transition: border-color var(--trans);
+}
+.filter-input:focus { @apply border-primary; }
+.filter-input::placeholder { @apply text-muted; }
+.history-search-input { @apply min-w-[190px]; }
+.history-filters { @apply gap-y-2; }
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+════════════════════════════════════════════════ */
+.btn-primary {
+  @apply inline-flex items-center gap-[.4rem] px-[.9rem] py-[.5rem] bg-primary text-white rounded font-ui text-[.82rem] font-semibold;
+  transition: background var(--trans), transform var(--trans);
+}
+.btn-primary:hover { @apply bg-primary-l; }
+.btn-primary:active { @apply scale-[.97]; }
+
+.btn-ghost {
+  @apply inline-flex items-center gap-[.4rem] px-[.9rem] py-[.5rem] border-[1.5px] border-border bg-white text-text rounded font-ui text-[.82rem] font-medium;
+  transition: border-color var(--trans), background var(--trans);
+}
+.btn-ghost:hover { @apply border-primary bg-primary/4; }
+
+.btn-danger {
+  @apply inline-flex items-center gap-[.4rem] px-[.9rem] py-[.5rem] bg-[#c0392b] text-white rounded font-ui text-[.82rem] font-semibold;
+  transition: background var(--trans);
+}
+.btn-danger:hover { @apply bg-[#a93226]; }
+
+.btn-paid-done {
+  @apply !bg-emerald opacity-75 cursor-default;
+}
+
+.btn-icon {
+  @apply w-[30px] h-[30px] inline-flex items-center justify-center rounded-[6px] text-[.95rem] text-muted;
+  transition: all var(--trans);
+}
+.btn-icon:hover { @apply bg-bg-alt text-primary; }
+.btn-icon.danger:hover { @apply bg-[#fde8e6] text-[#c0392b]; }
+
+/* ═══════════════════════════════════════════════
+   STATUS BADGES
+════════════════════════════════════════════════ */
+.badge {
+  @apply inline-flex items-center gap-[5px] py-[.22rem] px-[.65rem] rounded-[20px] font-ui text-[.7rem] font-semibold tracking-[.03em] whitespace-nowrap;
+}
+.badge::before {
+  content: '';
+  @apply w-[6px] h-[6px] rounded-full shrink-0;
+}
+.badge-received   { @apply bg-[rgba(201,151,58,.12)] text-[#a57a2a]; }
+.badge-received::before { @apply bg-gold; }
+.badge-kitchen    { @apply bg-[rgba(230,80,30,.12)] text-[#c0471a]; }
+.badge-kitchen::before { @apply bg-[#e6501e]; }
+.badge-ready      { @apply bg-[rgba(27,94,59,.12)] text-emerald; }
+.badge-ready::before { @apply bg-emerald; }
+.badge-served     { @apply bg-[rgba(138,114,101,.1)] text-muted; }
+.badge-served::before { @apply bg-muted; }
+.badge-cancelled  { @apply bg-[rgba(192,57,43,.1)] text-[#c0392b]; }
+.badge-cancelled::before { @apply bg-[#c0392b]; }
+
+.badge-table-empty    { @apply bg-[rgba(138,114,101,.1)] text-muted; }
+.badge-table-active   { @apply bg-[rgba(27,94,59,.12)] text-emerald; }
+.badge-table-disabled { @apply bg-[rgba(192,57,43,.1)] text-[#c0392b]; }
+
+.badge-role-owner { @apply bg-[rgba(201,151,58,.15)] text-gold-d; }
+.badge-role-admin { @apply bg-[rgba(107,26,42,.1)] text-primary; }
+.badge-role-staff { @apply bg-[rgba(138,114,101,.1)] text-muted; }
+
+.badge-res-pending   { @apply bg-[rgba(201,151,58,.12)] text-[#a57a2a]; }
+.badge-res-confirmed { @apply bg-[rgba(27,94,59,.12)] text-emerald; }
+.badge-res-cancelled { @apply bg-[rgba(192,57,43,.1)] text-[#c0392b]; }
+
+.badge-paid { @apply bg-[rgba(27,94,59,.1)] text-emerald; }
+.badge-skipped { @apply bg-[rgba(138,114,101,.1)] text-muted; }
+

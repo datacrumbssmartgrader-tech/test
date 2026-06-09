@@ -1,0 +1,165 @@
+
+/* ── Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: var(--ff-body);
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, select, textarea {
+  font-family: var(--ff-ui);
+  font-size: 0.9rem;
+  width: 100%;
+  border: 1.5px solid #d8cfc4;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background: var(--clr-white);
+  color: var(--clr-text);
+  transition: border-color var(--transition);
+  outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--clr-gold);
+  box-shadow: 0 0 0 3px rgba(201,151,58,.15);
+}
+textarea { resize: vertical; }
+
+/* ── Jali SVG Pattern ──────────────────────────── */
+.jali-overlay,
+.section-bg-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z' fill='none' stroke='%23C9973A' stroke-width='0.6' stroke-opacity='0.25'/%3E%3Ccircle cx='30' cy='30' r='4' fill='none' stroke='%23C9973A' stroke-width='0.6' stroke-opacity='0.2'/%3E%3Cpath d='M0 0 L15 15 M45 15 L60 0 M0 60 L15 45 M45 45 L60 60' stroke='%23C9973A' stroke-width='0.4' stroke-opacity='0.18'/%3E%3C/svg%3E");
+}
+
+/* ── Layout ─────────────────────────────────────── */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.section {
+  padding: 120px 0;
+  position: relative;
+}
+.section-header.centered { text-align: center; margin-bottom: 60px; }
+.section-bg-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.section-bg-dark {
+  position: absolute;
+  inset: 0;
+  background: var(--clr-dark);
+  z-index: -1;
+}
+
+/* ── Typography ────────────────────────────────── */
+.section-tag {
+  display: inline-block;
+  font-family: var(--ff-cinzel);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--clr-gold);
+  margin-bottom: 14px;
+}
+.section-tag.light { color: var(--clr-gold-l); }
+
+.section-title {
+  font-family: var(--ff-display);
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--clr-primary);
+  margin-bottom: 20px;
+}
+.section-title.light { color: var(--clr-bg); }
+
+.gold-rule {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--clr-gold), transparent);
+  margin-bottom: 28px;
+  position: relative;
+}
+.gold-rule::before {
+  content: '\2736';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 0.55rem;
+  color: var(--clr-gold);
+  background: var(--clr-bg);
+  padding: 0 4px;
+}
+.gold-rule.center { margin-left: auto; margin-right: auto; }
+.gold-rule.center::before { background: transparent; }
+
+p { color: var(--clr-muted); line-height: 1.8; margin-bottom: 1rem; }
+p:last-child { margin-bottom: 0; }
+
+/* ── Buttons ────────────────────────────────────── */
+.btn-primary, .btn-outline, .btn-hero-primary, .btn-hero-outline,
+.btn-nav-cta, .btn-gold-sm, .btn-primary-sm, .btn-outline-sm, .btn-submit {
+  @apply inline-flex items-center gap-2 font-ui text-[0.82rem] font-semibold tracking-[0.08em] uppercase rounded-[6px] px-7 py-[13px] whitespace-nowrap;
+  transition: all var(--transition);
+}
+.btn-primary {
+  @apply bg-primary text-white border-2 border-primary;
+}
+.btn-primary:hover {
+  @apply bg-primary-d border-primary-d -translate-y-[2px] shadow-[0_8px_24px_rgba(107,26,42,.3)];
+}
+.btn-outline {
+  @apply bg-transparent text-primary border-2 border-primary;
+}
+.btn-outline:hover {
+  @apply bg-primary text-white -translate-y-[2px];
+}
+.btn-hero-primary {
+  @apply bg-gold text-dark border-2 border-gold px-9 py-4 text-[0.85rem];
+}
+.btn-hero-primary:hover {
+  @apply bg-gold-l border-gold-l -translate-y-[2px] shadow-[0_12px_32px_rgba(201,151,58,.4)];
+}
+.btn-hero-outline {
+  @apply bg-transparent text-white border-2 border-white/60 px-9 py-4 text-[0.85rem];
+}
+.btn-hero-outline:hover {
+  @apply bg-white/10 border-white -translate-y-[2px];
+}
+.btn-nav-cta {
+  @apply bg-transparent text-gold border-[1.5px] border-gold px-5 py-[9px] text-[0.75rem];
+}
+.btn-nav-cta:hover {
+  @apply bg-gold text-dark;
+}
+.btn-gold-sm {
+  @apply bg-gold text-dark border-2 border-gold px-[22px] py-2.5 text-[0.78rem];
+}
+.btn-gold-sm:hover { @apply bg-gold-l -translate-y-[1px]; }
+.btn-primary-sm {
+  @apply bg-primary text-white border-2 border-primary px-[22px] py-2.5 text-[0.78rem];
+}
+.btn-primary-sm:hover { @apply bg-primary-d -translate-y-[1px]; }
+.btn-outline-sm {
+  @apply bg-transparent text-gold border-[1.5px] border-gold rounded-[6px] px-5 py-2.5 text-[0.78rem] font-semibold tracking-[0.06em] inline-flex items-center gap-1.5;
+}
+.btn-outline-sm:hover { @apply bg-gold text-dark; }
+.btn-submit {
+  @apply w-full justify-center bg-primary text-white border-2 border-primary px-7 py-[15px] text-[0.85rem] mt-2;
+}
+.btn-submit:hover {
+  @apply bg-primary-d border-primary-d -translate-y-[2px] shadow-[0_8px_28px_rgba(107,26,42,.3)];
+}
+

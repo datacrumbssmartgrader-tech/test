@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════════
+   TABLES
+════════════════════════════════════════════════ */
+.tables-grid {
+  @apply grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4 content-start;
+}
+.table-card {
+  @apply bg-white rounded-2xl border-2 border-[var(--clr-border-l)] py-[1.1rem] px-4 cursor-pointer relative;
+  transition: all var(--trans);
+}
+.table-card:hover { @apply shadow-md -translate-y-[2px]; }
+.table-card.active-table { @apply border-[rgba(27,94,59,.3)]; }
+.table-card.disabled-table {
+  @apply border-[rgba(192,57,43,.2)] opacity-70;
+}
+.table-alert-dot {
+  @apply absolute top-[.65rem] right-[.65rem] w-[9px] h-[9px] rounded-full bg-gold shadow-[0_0_0_2px_var(--clr-white)] shrink-0;
+  animation: pulse-gold 1.5s infinite;
+}
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 2px var(--clr-white), 0 0 0 4px rgba(201,151,58,0); }
+  50% { box-shadow: 0 0 0 2px var(--clr-white), 0 0 0 6px rgba(201,151,58,.35); }
+}
+.table-id {
+  @apply font-cinzel text-[1.1rem] font-semibold text-primary mb-[.4rem] tracking-[.06em];
+}
+.table-status-row {
+  @apply flex items-center gap-[.4rem] flex-wrap mb-[.65rem];
+}
+.table-meta {
+  @apply text-[.75rem] text-muted font-ui flex flex-col gap-[3px];
+}
+.table-meta-row { @apply flex items-center gap-1; }
+.table-meta-row i { @apply text-[.8rem]; }
+.table-card-actions {
+  @apply flex gap-[.4rem] mt-[.75rem] pt-[.65rem] border-t border-[var(--clr-border-l)];
+}
+.table-card-actions button {
+  @apply flex-1 py-[.35rem] px-2 rounded-[6px] font-ui text-[.7rem] font-semibold border-[1.5px] border-border text-text bg-transparent;
+  transition: all var(--trans);
+}
+.table-card-actions button:hover { @apply border-primary text-primary bg-[rgba(107,26,42,.04)]; }
+.table-card-actions button.danger:hover { @apply border-[#c0392b] text-[#c0392b] bg-[#fde8e6]; }
+

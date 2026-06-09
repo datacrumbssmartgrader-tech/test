@@ -1,0 +1,6 @@
+@import '../theme.css';
+@import './admin_styles/login.css';
+@import './admin_styles/shell.css';
+@import './admin_styles/orders.css';
+@import './admin_styles/tables.css';
+@import './admin_styles/rest.css';

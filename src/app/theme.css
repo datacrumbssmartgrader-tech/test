@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Colors ─────────────────────────────────── */
+  --color-primary:   #6B1A2A;
+  --color-primary-d: #4e1320;
+  --color-primary-l: #8a2236;
+  --color-gold:      #C9973A;
+  --color-gold-l:    #e0b060;
+  --color-gold-d:    #a57a2a;
+  --color-emerald:   #1B5E3B;
+  --color-bg:        #FBF5E6;
+  --color-bg-alt:    #f4ead5;
+  --color-dark:      #1C1018;
+  --color-dark-2:    #2a1e26;
+  --color-text:      #1A1017;
+  --color-muted:     #8A7265;
+  --color-surface:   #ffffff;
+  --color-border:    rgba(107,26,42,.12);
+
+  /* ── Font Families ──────────────────────────── */
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-cinzel:  'Cinzel', serif;
+  --font-body:    'Mulish', sans-serif;
+  --font-ui:      'Poppins', sans-serif;
+  --font-urdu:    'Noto Nastaliq Urdu', serif;
+
+  /* ── Border Radius ──────────────────────────── */
+  --radius:    14px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+
+  /* ── Shadows ────────────────────────────────── */
+  --shadow:    0 4px 24px rgba(28,16,24,.10);
+  --shadow-lg: 0 12px 48px rgba(28,16,24,.16);
+}
+
+/* ── Bridge aliases so unmigrated CSS still works ── */
+:root {
+  --clr-primary:   var(--color-primary);
+  --clr-primary-d: var(--color-primary-d);
+  --clr-primary-l: var(--color-primary-l);
+  --clr-gold:      var(--color-gold);
+  --clr-gold-l:    var(--color-gold-l);
+  --clr-gold-d:    var(--color-gold-d);
+  --clr-emerald:   var(--color-emerald);
+  --clr-bg:        var(--color-bg);
+  --clr-bg-alt:    var(--color-bg-alt);
+  --clr-dark:      var(--color-dark);
+  --clr-dark-2:    var(--color-dark-2);
+  --clr-text:      var(--color-text);
+  --clr-muted:     var(--color-muted);
+  --clr-white:     #ffffff;
+  --clr-surface:   var(--color-surface);
+  --clr-border:    var(--color-border);
+
+  --ff-display: var(--font-display);
+  --ff-cinzel:  var(--font-cinzel);
+  --ff-body:    var(--font-body);
+  --ff-ui:      var(--font-ui);
+  --ff-urdu:    var(--font-urdu);
+
+  /* Transition timing (not in @theme — not a utility) */
+  --trans:      0.28s cubic-bezier(0.4,0,0.2,1);
+  --transition: 0.35s cubic-bezier(0.4,0,0.2,1);
+
+  /* Component dimensions */
+  --nav-bottom: 72px;
+  --nav-h:      80px;
+}

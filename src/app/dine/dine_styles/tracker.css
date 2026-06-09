@@ -1,0 +1,43 @@
+/* ═══════════════════════════════════════════════
+   TRACKER SCREEN
+════════════════════════════════════════════════ */
+.tracker-scroll {
+  @apply flex-1 overflow-y-auto px-3 pt-4 pb-[calc(var(--nav-bottom)+1rem)] scrollbar-none;
+}
+.tracker-scroll::-webkit-scrollbar { display: none; }
+.section-title {
+  @apply font-cinzel text-[1rem] text-primary tracking-[.05em] mb-4;
+}
+.tracker-empty {
+  @apply text-center py-12 px-4 text-muted font-ui;
+}
+.tracker-empty i { @apply text-[3rem] block mb-[.75rem]; }
+.tracker-empty p { @apply mb-[1.25rem] text-[.9rem]; }
+.tracker-list { @apply flex flex-col gap-[.75rem]; }
+
+/* Order batch card */
+.order-batch {
+  @apply bg-surface rounded shadow overflow-hidden;
+}
+.order-batch-header {
+  @apply flex items-center justify-between py-[.75rem] px-4 border-b border-border;
+}
+.order-batch-num {
+  @apply font-ui text-[.78rem] font-semibold text-muted;
+}
+.order-status-badge {
+  @apply font-ui text-[.68rem] font-bold tracking-[.06em] uppercase py-1 px-[.7rem] rounded-full;
+}
+.status-received   { @apply bg-[#fef3c7] text-[#92400e]; }
+.status-kitchen    { @apply bg-[#dbeafe] text-[#1e40af]; }
+.status-on-its-way { @apply bg-[#d1fae5] text-[#065f46]; }
+.status-served     { @apply bg-[#e9d5ff] text-[#5b21b6]; }
+
+.order-batch-items {
+  @apply py-[.6rem] px-4 flex flex-col gap-[.35rem];
+}
+.order-batch-item {
+  @apply flex justify-between font-ui text-[.82rem] text-text;
+}
+.order-batch-item-price { @apply text-muted; }
+

@@ -1,0 +1,30 @@
+/* ═══════════════════════════════════════════════
+   BILL SCREEN
+════════════════════════════════════════════════ */
+.bill-scroll {
+  @apply flex-1 overflow-y-auto px-3 pt-4 pb-[calc(var(--nav-bottom)+1rem)] scrollbar-none;
+}
+.bill-scroll::-webkit-scrollbar { display: none; }
+.bill-empty {
+  @apply text-center py-12 px-4 text-muted font-ui text-[.9rem];
+}
+.bill-empty i { @apply text-[3rem] block mb-[.75rem]; }
+.bill-content { @apply flex flex-col gap-[.6rem]; }
+.bill-items {
+  @apply bg-surface rounded shadow py-[.75rem] px-4 flex flex-col gap-2;
+}
+.bill-item-row {
+  @apply flex justify-between font-ui text-[.83rem] text-text;
+}
+.bill-item-price { @apply text-muted; }
+.bill-divider { @apply h-[1px] bg-border; }
+.bill-row {
+  @apply flex justify-between font-ui text-[.88rem] text-text;
+}
+.bill-total {
+  @apply font-bold text-[1rem] text-primary;
+}
+.bill-note {
+  @apply font-ui text-[.75rem] text-muted flex items-start gap-[.35rem] leading-1.5;
+}
+
