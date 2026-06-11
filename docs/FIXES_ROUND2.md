@@ -6,23 +6,24 @@
 
 | # | Issue | Status |
 |---|-------|--------|
+| 16 | QR token UUID exposed in dine page URL (`?token=UUID`) | ❌ Remaining |
 | 1a | `useOrders.ts` reads `id` instead of `order_id` from POST response | ✅ Done |
 | 1b | `LiveOrders` card reconstructed: advance button, `#ORD-003` IDs, `⏱ prep_time`, status enum fix (`placed`→`received`) | ✅ Done |
 | 1c | `LiveOrders` — `⏱ prep_time` hidden for served orders; should stay visible (only hide for cancelled) | ✅ Done |
 | 2 | Admin section spacing — inline `style` display, `.section` class never applied | ✅ Done |
-| 3 | Tables tick not incremented on `order:created` / `payment:received` | ❌ Remaining |
+| 3 | Tables tick not incremented on `order:created` / `payment:received` | ✅ Done |
 | 4 | `OrderHistory` shows UUID slugs (`#e3bb1779`) | ✅ Done |
 | 5 | Alerts: no fade transition on resolve; dismiss-all clears active alerts | ✅ Done |
 | 6 | `sessions/route.ts` never emitted `table:update` SSE | ✅ Done |
 | 7 | Disabled table shows wrong error; no early status check | ✅ Done |
-| 8 | `payment/route.ts` — order_ids not scoped to billing round; no `emitToDine` | ❌ Remaining |
-| 9 | `GET /api/sessions/[id]/payments` route missing (plural — list all payment records) | ❌ Remaining |
-| 10 | `api.ts` — `SessionPayment` type + `getSessionPayments()` missing | ❌ Remaining |
-| 11 | `LiveOrder` interface + admin orders SQL missing `billing_round` field | ❌ Remaining |
-| 12 | `useBilling.ts` — no `sessionId` param, no DB restore on mount, no `applyPaymentReceived` | ❌ Remaining |
-| 13 | `dine/page.tsx` — `useBilling` ignores `sessionId`; no `payment:received` SSE handler | ❌ Remaining |
-| 14 | `TablesGrid.tsx` — no per-order paid display; "Mark as Paid" sends full total instead of unpaid balance | ❌ Remaining |
-| 15 | Dine page refresh wipes all orders from customer UI — no session order restore on init | ❌ Remaining |
+| 8 | `payment/route.ts` — order_ids not scoped to billing round; no `emitToDine` | ✅ Done |
+| 9 | `GET /api/sessions/[id]/payments` route missing (plural — list all payment records) | ✅ Done |
+| 10 | `api.ts` — `SessionPayment` type + `getSessionPayments()` missing | ✅ Done |
+| 11 | `LiveOrder` interface + admin orders SQL missing `billing_round` field | ✅ Done |
+| 12 | `useBilling.ts` — no `sessionId` param, no DB restore on mount, no `applyPaymentReceived` | ✅ Done |
+| 13 | `dine/page.tsx` — `useBilling` ignores `sessionId`; no `payment:received` SSE handler | ✅ Done |
+| 14 | `TablesGrid.tsx` — no per-order paid display; "Mark as Paid" sends full total instead of unpaid balance | ✅ Done |
+| 15 | Dine page refresh wipes all orders from customer UI — no session order restore on init | ✅ Done |
 
 ---
 
@@ -82,6 +83,18 @@ id: response.data?.order_id || response.data?.id || String(nextOrderId),
   - Already served/cancelled → no button shown
 - Keep Cancel as a separate `btn-danger` button
 
+### Changes Made ✅
+
+**`src/hooks/dine/useOrders.ts:40`**
+```typescript
+// Before:
+id: response.data?.id || String(nextOrderId),
+// After:
+id: response.data?.order_id || response.data?.id || String(nextOrderId),
+```
+
+**`src/components/admin/LiveOrders.tsx`** — `<select>` replaced with advance button (`→ Kitchen`, `→ Ready`, `→ Served`) + separate Cancel button. `⏱ prep_time` display added to order-card header (issue 1c: kept visible for served orders, hidden only for cancelled).
+
 ---
 
 ## Issue 2 — Admin Content Area Has No Spacing from Sidebar/Edges
@@ -124,6 +137,10 @@ Change each section from inline-style display to CSS class, and always mount the
 
 Do this for all 6 sections (orders, tables, menu, alerts, history, payments). Removing the conditional `{activeSection === "xxx" && <Component />}` means components mount once and stay mounted — better performance and no state loss on tab switch. CSS `.section` / `.section.active` already handles show/hide via `display: none` / `display: flex`.
 
+### Changes Made ✅
+
+**`src/app/admin/page.tsx`** — all 6 `<section>` tags changed from `style={{ display: ... }}` + conditional component render to `className={\`section${active ? " active" : ""}\`}` with components always mounted.
+
 ---
 
 ## Issue 3 — Table Cards Don't Update After Customer Orders or Pays
@@ -162,6 +179,12 @@ So the table card's running bill, order count, and session_total_paid fields nev
 }
 ```
 
+### Changes Made ✅
+
+**`src/app/admin/page.tsx`**
+- Added `setTablesRefreshTick((prev) => prev + 1)` inside the `order:created` SSE branch (after `setOrders`).
+- Added `setTablesRefreshTick((prev) => prev + 1)` inside the `payment:received` SSE branch (alongside existing `setPaymentsRefreshTick`).
+
 ---
 
 ## Issue 4 — OrderHistory Still Shows UUID Slugs (#e3bb1779)
@@ -192,6 +215,10 @@ filtered.map((o, idx) => (
 ```
 
 Remove the `fontFamily: monospace` and `fontSize: 0.8rem` inline style on that cell since it was only there to make the UUID readable.
+
+### Changes Made ✅
+
+**`src/components/admin/OrderHistory.tsx`** — `.map((o) =>` changed to `.map((o, idx) =>`. Display cell changed from `#{o.id.slice(0, 8)}` to `Order #{idx + 1}`. Inline monospace/font-size styles removed from that cell.
 
 ---
 
@@ -266,6 +293,13 @@ const handleDismissAll = async () => {
 ```
 (Rename to "Clear Resolved" to match new behavior more clearly.)
 
+### Changes Made ✅
+
+**`src/components/admin/AlertsPanel.tsx`**
+- Alert card `style` prop changed to include `transition: "opacity 0.4s ease"` on both resolved and unresolved states, and `pointerEvents: "none"` added when resolved.
+- `handleDismissAll` simplified to `setAlerts((prev) => prev.filter((a) => !a._resolved))` — no longer calls `resolveAlert` on active alerts, no longer clears everything.
+- "Dismiss All" button renamed to "Clear Resolved" and conditionally rendered only when `alerts.some((a) => a._resolved)`.
+
 ---
 
 ## Issue 6 — Table Card Stays "Empty" After Customer Scans QR and Orders
@@ -315,6 +349,13 @@ eventManager.emitToAdmin('table:update', {
   active_session_id: s.id,
 });
 ```
+
+### Changes Made ✅
+
+**`src/app/api/sessions/route.ts`**
+- Added `import { eventManager } from '@/lib/events'` at the top.
+- After new session creation + `UPDATE restaurant_tables`, added `eventManager.emitToAdmin('table:update', { table_id, status: 'active', active_session_id: session.id })`.
+- In the duplicate-session resume path, added a defensive `UPDATE restaurant_tables SET status='active' ... WHERE status != 'active' OR active_session_id IS NULL` followed by the same `emitToAdmin` call.
 
 ---
 
@@ -380,6 +421,14 @@ if (res.status === 403) {
   showToast(res.error || "Failed to create session", "error");
 }
 ```
+
+### Changes Made ✅
+
+**`src/app/dine/page.tsx`**
+- Added `"table-disabled"` to the `Screen` type union.
+- Added early `api.getTableByQR(qr)` call at the top of `init()` — sets `"table-disabled"` if status is `"disabled"`, sets `"session-error"` if the QR is invalid (non-200).
+- Added `"table-disabled"` screen render with "Table Not Available" heading and no re-scan button.
+- `handleUserDetailsSubmit`: 403 response from `POST /api/sessions` now sets `"table-disabled"` instead of `"session-error"`.
 
 ---
 
@@ -463,6 +512,13 @@ eventManager.emitToDine(sessionId, 'payment:received', {
 });
 ```
 
+### Changes Made ✅
+
+**`src/app/api/sessions/[session_id]/payment/route.ts`**
+- Added `const billingRound = session.billing_round;` immediately after reading `session` from DB (before the UPDATE which increments the round).
+- Changed orders query from `WHERE session_id = ${sessionId}::uuid` to `WHERE session_id = ${sessionId}::uuid AND billing_round = ${billingRound}` so only the current round's orders are recorded.
+- Added `eventManager.emitToDine(sessionId, 'payment:received', { billing_round, order_ids, amount, method, paid_at })` after the existing `emitToAdmin` call.
+
 ---
 
 ## Issue 9 — Missing `GET /api/sessions/[session_id]/payments` Route
@@ -488,6 +544,13 @@ export async function GET(req, { params }) {
 ```
 
 No auth required — same public access pattern as `payment/route.ts`.
+
+### Changes Made ✅
+
+**New file: `src/app/api/sessions/[session_id]/payments/route.ts`**
+- Created `GET` handler that queries `payments WHERE session_id = $1 ORDER BY paid_at ASC`.
+- Returns `payment_id, billing_round, order_ids, amount, method, paid_at` — `amount` cast to `Number` to avoid Postgres decimal string.
+- No auth required; follows the same public-endpoint pattern as `payment/route.ts`.
 
 ---
 
@@ -518,6 +581,12 @@ getSessionPayments: (sessionId: string) =>
   fetchJson<SessionPayment[]>(`/api/sessions/${sessionId}/payments`),
 ```
 
+### Changes Made ✅
+
+**`src/lib/api.ts`**
+- Added `SessionPayment` interface (`payment_id`, `billing_round`, `order_ids`, `amount`, `method`, `paid_at`) in the PAYMENTS section.
+- Added `getSessionPayments(sessionId)` function calling `GET /api/sessions/${sessionId}/payments`, typed as `ApiResponse<SessionPayment[]>`.
+
 ---
 
 ## Issue 11 — `LiveOrder` Interface and Admin Orders SQL Missing `billing_round`
@@ -537,6 +606,12 @@ billing_round: number;
 o.billing_round,
 ```
 And include it in the mapped response object.
+
+### Changes Made ✅
+
+**`src/components/admin/LiveOrders.tsx`** — added `billing_round: number;` to the `LiveOrder` interface (line 13).
+
+**`src/app/api/admin/orders/route.ts`** — added `o.billing_round,` to the SELECT column list. The existing `...o` spread in the `mapped` block automatically includes it in the response — no additional mapping change needed.
 
 ---
 
@@ -578,6 +653,15 @@ const applyPaymentReceived = useCallback((billingRound: number) => {
 
 Return `applyPaymentReceived` in the hook's return value.
 
+### Changes Made ✅
+
+**`src/hooks/dine/useBilling.ts`**
+- Added `useEffect` and `useCallback` to imports; added `import * as api from "@/lib/api"`.
+- Changed signature from `useBilling(orders)` to `useBilling(orders, sessionId: string | null)`.
+- Added `useEffect` on `sessionId`: calls `api.getSessionPayments(sessionId)`, restores `paidRounds` as a Set of `billing_round` values, and sets `currentBillingRound` to `maxRound + 1`.
+- Added `applyPaymentReceived(billingRound)` callback: adds the round to `paidRounds` and bumps `currentBillingRound` to at least `billingRound + 1`.
+- Returned `applyPaymentReceived` from the hook.
+
 ---
 
 ## Issue 13 — `dine/page.tsx`: `useBilling` Ignores `sessionId`; No `payment:received` SSE Case
@@ -600,6 +684,12 @@ const { currentBillingRound, paidRounds, ..., applyPaymentReceived } = useBillin
   applyPaymentReceived(event.data.billing_round);
 }
 ```
+
+### Changes Made ✅
+
+**`src/app/dine/page.tsx`**
+- `useBilling` call changed from `useBilling(orders)` to `useBilling(orders, sessionId)`. `applyPaymentReceived` destructured from the return value.
+- Added `payment:received` SSE case in `useDineStream` `onEvent` handler — calls `applyPaymentReceived(event.data.billing_round)`.
 
 ---
 
@@ -644,6 +734,15 @@ await api.recordPayment(billTable.active_session_id, unpaid, 'cash');
 ```tsx
 {unpaid > 0 && <button onClick={handleMarkPaid}>Mark as Paid</button>}
 ```
+
+### Changes Made ✅
+
+**`src/components/admin/TablesGrid.tsx`**
+- Removed unused `React` import; added `SessionPayment` to the `api` import.
+- Added `billPayments: SessionPayment[]` state.
+- Added `useEffect` on `billTable?.active_session_id` — fetches `api.getSessionPayments()` when the bill modal opens, clears on close.
+- Bill modal body: wrapped in an IIFE to derive `paidOrderIds` (Set of paid order UUIDs from `billPayments`) and `unpaid` balance. Each order row now shows a `badge-paid` badge when `paidOrderIds.has(o.id)`. Order IDs changed from `#{o.id.slice(0, 8)}` to `Order #N`. Added "Paid so far" line when partial payment exists.
+- Bill modal footer: `unpaid` derived as `grandTotal - session_total_paid`. "Mark as Paid" button now sends `unpaid` (not `grandTotal`) and shows the amount when partial. Button hidden when `unpaid <= 0`. `alert()` calls removed — payment failure is silent (state unchanged, admin can retry). "Reset Table" button moved alongside the disabled "Paid" button.
 
 ---
 
@@ -810,9 +909,35 @@ This single check handles both scenarios: closed session → `"session-ended"` s
 ### What This Also Fixes
 
 - `OrderTracker` correctly shows the last known status for each batch instead of being empty.
-- `useBilling` (once issue #12 is fixed) can derive `currentBillingRound` from restored order data.
+- `useBilling` (issue #12) restores `paidRounds` and `currentBillingRound` correctly because order data is present before `useBilling`'s own `useEffect` fires.
 - Customer cannot accidentally re-order the same items by thinking the page reset.
-- Customer gets a dignified, correct message when staff clear the table — no confusing "re-scan your QR" prompt when re-scanning won't help yet.
+- Customer gets a clear "Session Cleared" message when staff reset the table and the customer then refreshes or opens a new tab.
+
+> **Behavior note:** The `session-ended` screen appears on **page load** (refresh or new tab after a reset). If the customer's tab is open when admin hits Reset, the existing `session:closed` SSE event fires and shows the `session-error` screen instead — this is pre-existing live behaviour and intentionally distinct. Unifying both paths to `session-ended` is a possible follow-up.
+
+### Changes Made ✅
+
+**`src/app/api/sessions/[session_id]/orders/route.ts`** — Rewrote entirely:
+- First queries `sessions` for `closed_at`; returns 404 if not found
+- Returns `{ closed_at, orders }` shape
+- SQL uses `o.id AS order_id`, `json_agg` for items with `menuId` alias for `menu_item_id`, `ORDER BY placed_at ASC`, `status != 'cancelled'` filter
+
+**`src/lib/api.ts`**
+- Added `SessionOrder` interface (`order_id`, `status`, `total`, `billing_round`, `placed_at`, `items[]`)
+- Added `SessionOrdersResponse` interface (`closed_at: string | null`, `orders: SessionOrder[]`)
+- Updated `getSessionOrders` return type to `ApiResponse<SessionOrdersResponse>`
+- Added `order_id?: string` to the `Order` interface (the backend returns this field; the issue 1a fix used it but the type was missing it)
+
+**`src/hooks/dine/useOrders.ts`**
+- Added `import type { SessionOrder }` from api
+- Added `restoreOrders(fetched: SessionOrder[])` callback: maps each `SessionOrder` to `OrderBatch` (using `API_STATUS_MAP` for status, `Number(i.price)` for price), calls `setOrders` and resets `nextOrderId` to `batches.length + 1`
+- Returned `restoreOrders` from the hook
+
+**`src/app/dine/page.tsx`**
+- Added `"session-ended"` to the `Screen` type union
+- Destructured `restoreOrders` from `useOrders()`
+- In `init()`, after `storedSessionId` is read: calls `api.getSessionOrders(storedSessionId)` — 404 clears storage and shows `session-error`; `closed_at` non-null clears session/table from storage and shows `session-ended`; 200 with orders calls `restoreOrders()`
+- Added `session-ended` screen: "Session Cleared" heading with door-open icon, instructs customer to re-scan QR
 
 ---
 
@@ -831,16 +956,68 @@ This single check handles both scenarios: closed session → `"session-ended"` s
 
 ## Verification (Issues 8–15)
 
-1. **SSE payment sync**: Customer opens Bill → pays → dine page immediately locks paid orders without refresh.
-2. **Refresh restore**: Customer pays, refreshes dine page → paid rounds correctly shown as paid (not reset).
-3. **Admin bill modal**: Open running bill for an active table → orders grouped by round with "Paid" badges on settled ones.
-4. **Partial payment**: One round paid, new order placed → "Mark as Paid" amount equals only the new unpaid total, not the full session total.
-5. **Button hidden when settled**: After full payment, "Mark as Paid" button disappears.
-6. **Order restore on refresh**: Customer places orders → refreshes browser → tracker shows all previous orders with correct statuses. Admin Live Orders unchanged.
-7. **Session-ended screen**: Admin resets table while customer tab is closed → customer reopens tab → sees "Your session has been cleared by staff" screen, not a confusing session-error or a silent fresh start.
+1. ✅ **SSE payment sync**: Customer opens Bill → pays → dine page immediately locks paid orders without refresh.
+2. ✅ **Refresh restore (billing)**: Customer pays, refreshes dine page → paid rounds correctly shown as paid (not reset).
+3. ✅ **Admin bill modal**: Open running bill for an active table → orders show `Order #N` labels with "Paid" badges on settled ones.
+4. ✅ **Partial payment**: One round paid, new order placed → "Mark as Paid" button shows only the new unpaid amount (e.g. `Mark as Paid (PKR 800)`), not the full session total.
+5. ✅ **Button hidden when settled**: After full payment, "Mark as Paid" button replaced by disabled "✓ Paid" + "Reset Table".
+6. ✅ **Order restore on refresh**: Customer places orders → refreshes browser → tracker shows all previous orders with correct statuses.
+7. ⚠️ **Session-ended screen**: Shows correctly when customer refreshes/reopens tab after admin reset. If the customer's tab is open when reset fires, the pre-existing `session-error` screen appears instead (SSE path). See behaviour note in issue 15.
 
 ---
 
 ## Test Suite
 
 Run `npm test` — 74/74 must still pass. The sessions route change (Issue 6) adds eventManager emission which is non-breaking. The dine page change (Issue 7) adds an early API call but doesn't change any API contract. Issues 8–15 add new endpoints and extend existing hooks/components without removing existing API contracts.
+
+---
+
+## Issue 16 — QR Token UUID Exposed in Dine Page URL
+
+### Symptom
+
+After scanning a QR code the browser address bar shows:
+```
+http://localhost:3000/dine?table=T04&token=70ac7fb3-88b2-4e3a-80b7-e7462856e66d
+```
+The full 36-character UUID `qr_token` is visible in browser history, screenshots, and to anyone glancing at the screen.
+
+### Why It Happens
+
+The QR code is generated in `src/app/api/admin/tables/[id]/qr/route.ts` by building a URL string directly from the table record:
+```typescript
+`${baseUrl}/dine?table=${table.id}&token=${table.qr_token}`
+```
+`qr_token` is a raw UUID column in `restaurant_tables`. The dine page reads it with `params.get("token")`, uses it for one table-status check (`GET /api/tables/[qr_token]`) and one session creation call (`POST /api/sessions`). After that it is **never needed again** — all subsequent requests (orders, payments, alerts) use `riwayat_session_id` stored in sessionStorage. The UUID only needs to be in the URL for the very first page load.
+
+The `table=T04` param is also redundant — the token lookup already returns the table label.
+
+### Options Considered
+
+| Option | Verdict |
+|--------|---------|
+| Base62-encode the UUID (no schema change) | Still ~22 chars, still obviously a long token |
+| URL fragment `#token=...` | Not sent to server in HTTP requests but still visible in browser; breaks standard routing |
+| Server-side redirect (`/scan/[token]` sets cookie → redirect to `/dine`) | Cleanest UX but large architectural change requiring cookie-based auth on dine page |
+| **Short token column (recommended)** | 8-char alphanumeric, clean URL, minimal schema change |
+
+### Fix
+
+Add a `short_token` column to `restaurant_tables` (8-char base62, e.g. `aB3kP9qR`). The QR URL becomes:
+```
+http://localhost:3000/dine?t=aB3kP9qR
+```
+
+**Files to change:**
+
+| File | Change |
+|------|--------|
+| DB migration | `ALTER TABLE restaurant_tables ADD COLUMN short_token VARCHAR(10) UNIQUE NOT NULL` — backfill with `crypto.randomBytes(6).toString('base64url').slice(0, 8)` |
+| `src/app/api/admin/tables/[id]/qr/route.ts` | Build URL as `` `/dine?t=${table.short_token}` `` — drop `table=` param |
+| `src/app/api/admin/tables/[id]/regenerate-qr/route.ts` | Regenerate `short_token` alongside `qr_token` |
+| New `src/app/api/tables/s/[short_token]/route.ts` | Same shape as existing UUID lookup route but queries `WHERE short_token = ${short_token}` |
+| `src/app/api/sessions/route.ts` | Accept `short_token` in body, look up table by `short_token` column |
+| `src/app/dine/page.tsx` | Read `params.get("t") ?? params.get("token")` — fallback keeps old printed QR codes working |
+| `src/lib/api.ts` | Update `getTableByQR` endpoint path to `/api/tables/s/${token}` |
+
+**Backward compatibility:** The `params.get("t") ?? params.get("token")` fallback means any QR codes already printed with the old `?token=UUID` URL keep working until they are physically replaced or regenerated.

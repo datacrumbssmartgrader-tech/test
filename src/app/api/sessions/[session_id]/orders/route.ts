@@ -3,84 +3,58 @@ import { sql } from '@/lib/db';
 
 /**
  * GET /api/sessions/:session_id/orders
- * Retrieve all orders for a specific session
- * Returns orders with their items
+ * Returns session closed_at + all orders with items.
+ * closed_at non-null means the session was reset by admin.
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ session_id: string }> }
 ) {
   try {
-    const { session_id } = await params;
+    const { session_id: sessionId } = await params;
 
-    if (!session_id) {
-      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
-    }
-
-    // Get orders for session
-    const ordersResult = await sql`
-      SELECT 
-        id, 
-        session_id, 
-        table_id, 
-        billing_round, 
-        status, 
-        total, 
-        placed_at, 
-        updated_at
-      FROM orders 
-      WHERE session_id = ${session_id}::uuid
-      ORDER BY placed_at DESC
+    const sessionRows = await sql`
+      SELECT closed_at FROM sessions WHERE id = ${sessionId}::uuid
     `;
 
-    if (ordersResult.length === 0) {
-      return NextResponse.json([], { status: 200 });
+    if (sessionRows.length === 0) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    // Get items for each order
-    const ordersWithItems = await Promise.all(
-      ordersResult.map(async (order) => {
-        const itemsResult = await sql`
-          SELECT 
-            id, 
-            order_id, 
-            menu_item_id, 
-            name, 
-            price, 
-            qty, 
-            note
-          FROM order_items 
-          WHERE order_id = ${order.id}::uuid
-          ORDER BY created_at ASC
-        `;
+    const orders = await sql`
+      SELECT
+        o.id          AS order_id,
+        o.status,
+        o.total,
+        o.billing_round,
+        o.placed_at,
+        json_agg(
+          json_build_object(
+            'menuId',  oi.menu_item_id,
+            'name',    oi.name,
+            'price',   oi.price,
+            'qty',     oi.qty,
+            'note',    oi.note
+          ) ORDER BY oi.created_at ASC
+        ) FILTER (WHERE oi.id IS NOT NULL) AS items
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      WHERE o.session_id = ${sessionId}::uuid
+        AND o.status != 'cancelled'
+      GROUP BY o.id
+      ORDER BY o.placed_at ASC
+    `;
 
-        return {
-          id: order.id,
-          session_id: order.session_id,
-          table_id: order.table_id,
-          billing_round: order.billing_round,
-          status: order.status,
-          total: order.total,
-          placed_at: order.placed_at,
-          updated_at: order.updated_at,
-          items: itemsResult.map((item) => ({
-            id: item.id,
-            menu_item_id: item.menu_item_id,
-            name: item.name,
-            price: item.price,
-            quantity: item.qty,
-            note: item.note,
-          })),
-        };
-      })
-    );
-
-    return NextResponse.json(ordersWithItems, { status: 200 });
+    return NextResponse.json({
+      closed_at: sessionRows[0].closed_at ?? null,
+      orders: orders.map((o: any) => ({
+        ...o,
+        total: Number(o.total),
+        items: o.items ?? [],
+      })),
+    });
   } catch (error) {
     console.error('GET /api/sessions/:session_id/orders error:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve orders' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to retrieve orders' }, { status: 500 });
   }
 }

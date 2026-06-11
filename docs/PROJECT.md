@@ -147,7 +147,7 @@ npm run test:phase-b    # individual phase
 
 | Role | Access | Entry Point |
 |------|--------|-------------|
-| **Customer** | Dine page only | `/dine?table=T01&token=<uuid>` (via QR scan) |
+| **Customer** | Dine page only | `/dine?table=T01&token=<uuid>` (via QR scan) — Issue 16 will shorten to `?t=<8chars>` |
 | **Staff (user)** | Admin dashboard, order management | `/admin` |
 | **Staff (admin)** | Full admin access | `/admin` |
 

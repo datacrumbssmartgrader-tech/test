@@ -19,7 +19,7 @@ import { useCart } from "@/hooks/dine/useCart";
 import { useOrders } from "@/hooks/dine/useOrders";
 import { useBilling } from "@/hooks/dine/useBilling";
 
-type Screen = "loading" | "user-details" | "welcome" | "menu" | "cart" | "tracker" | "bill" | "session-error" | "table-disabled";
+type Screen = "loading" | "user-details" | "welcome" | "menu" | "cart" | "tracker" | "bill" | "session-error" | "table-disabled" | "session-ended";
 
 export default function DinePage() {
   // ── Session & navigation state ──────────────────────────────────
@@ -46,8 +46,8 @@ export default function DinePage() {
 
   // ── Domain hooks ────────────────────────────────────────────────
   const { cart, quickAdd, addToCart, updateQty, clearCart } = useCart();
-  const { orders, isSubmitting, placeOrder, applySSEStatusChange } = useOrders();
-  const { currentBillingRound, paidRounds, hasRequestedBill, setHasRequestedBill, onPaymentSuccess, amountDue } = useBilling(orders);
+  const { orders, isSubmitting, placeOrder, applySSEStatusChange, restoreOrders } = useOrders();
+  const { currentBillingRound, paidRounds, hasRequestedBill, setHasRequestedBill, onPaymentSuccess, applyPaymentReceived, amountDue } = useBilling(orders, sessionId);
 
   // ── Real-time order status updates via SSE ─────────────────────
   useDineStream(sessionId, {
@@ -55,6 +55,8 @@ export default function DinePage() {
       if (event.type === "order:status_changed") {
         const { id, order_id, status } = event.data;
         applySSEStatusChange(id || order_id, status);
+      } else if (event.type === "payment:received") {
+        applyPaymentReceived(event.data.billing_round);
       } else if (event.type === "session:closed") {
         sessionStorage.removeItem("riwayat_session_id");
         sessionStorage.removeItem("riwayat_table_id");
@@ -92,7 +94,29 @@ export default function DinePage() {
       const storedTableId = sessionStorage.getItem("riwayat_table_id");
       const storedUser = sessionStorage.getItem("riwayat_user");
 
-      if (storedSessionId) setSessionId(storedSessionId);
+      if (storedSessionId) {
+        setSessionId(storedSessionId);
+
+        const sessionRes = await api.getSessionOrders(storedSessionId);
+
+        if (sessionRes.status === 404) {
+          sessionStorage.clear();
+          setActiveScreen("session-error");
+          return;
+        }
+
+        if (sessionRes.status === 200 && sessionRes.data?.closed_at) {
+          sessionStorage.removeItem("riwayat_session_id");
+          sessionStorage.removeItem("riwayat_table_id");
+          setActiveScreen("session-ended");
+          return;
+        }
+
+        if (sessionRes.status === 200 && sessionRes.data?.orders.length) {
+          restoreOrders(sessionRes.data.orders);
+        }
+      }
+
       if (storedTableId) {
         setTableId(storedTableId);
       } else if (table) {
@@ -234,6 +258,18 @@ export default function DinePage() {
           <h2 style={{ fontFamily: "var(--ff-display, serif)", fontSize: "1.4rem", fontWeight: 700, color: "var(--clr-text)", margin: 0 }}>Table Not Available</h2>
           <p style={{ color: "var(--clr-muted)", fontSize: "0.9rem", maxWidth: "280px", lineHeight: 1.6, margin: 0 }}>
             This table is currently not accepting orders.<br />Please use another table or ask a staff member for assistance.
+          </p>
+        </div>
+      )}
+
+      {activeScreen === "session-ended" && (
+        <div className="screen" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "2rem", textAlign: "center", background: "var(--clr-bg)", gap: "1rem" }}>
+          <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(192,57,43,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", color: "#c0392b", marginBottom: "0.5rem" }}>
+            <i className="ri-door-open-line" />
+          </div>
+          <h2 style={{ fontFamily: "var(--ff-display, serif)", fontSize: "1.4rem", fontWeight: 700, color: "var(--clr-text)", margin: 0 }}>Session Cleared</h2>
+          <p style={{ color: "var(--clr-muted)", fontSize: "0.9rem", maxWidth: "280px", lineHeight: 1.6, margin: 0 }}>
+            Your table has been cleared by staff. Please scan the QR code again to start a new session.
           </p>
         </div>
       )}

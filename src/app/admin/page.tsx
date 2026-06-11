@@ -68,6 +68,7 @@ function AdminDashboard() {
           created_at: raw.placed_at || raw.created_at,
         };
         setOrders((prev) => [newOrder, ...prev]);
+        setTablesRefreshTick((prev) => prev + 1);
         showToast("New order received", "success");
       } else if (event.type === "order:status_changed") {
         const raw = event.data as any;
@@ -79,6 +80,7 @@ function AdminDashboard() {
         showToast("New waiter alert received", "info");
       } else if (event.type === "payment:received") {
         setPaymentsRefreshTick((prev) => prev + 1);
+        setTablesRefreshTick((prev) => prev + 1);
         showToast("New payment received", "success");
       } else if (event.type === "table:update") {
         setTablesRefreshTick((prev) => prev + 1);

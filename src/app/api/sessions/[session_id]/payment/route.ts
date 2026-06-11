@@ -39,10 +39,11 @@ export async function POST(
     }
 
     const session = sessionResult[0];
+    const billingRound = session.billing_round;
 
-    // Get order IDs for the session
+    // Get order IDs scoped to the current billing round
     const ordersResult = await sql`
-      SELECT id FROM orders WHERE session_id = ${sessionId}::uuid
+      SELECT id FROM orders WHERE session_id = ${sessionId}::uuid AND billing_round = ${billingRound}
     `;
 
     const orderIds = ordersResult.map((order: any) => order.id);
@@ -77,6 +78,15 @@ export async function POST(
       session_id: payment.session_id,
       amount: Number(payment.amount),
       payment_method: payment.method,
+      paid_at: payment.paid_at,
+    });
+
+    // Emit event to dine stream so the customer UI updates immediately
+    eventManager.emitToDine(sessionId, 'payment:received', {
+      billing_round: billingRound,
+      order_ids: orderIds,
+      amount: Number(payment.amount),
+      method: payment.method,
       paid_at: payment.paid_at,
     });
 

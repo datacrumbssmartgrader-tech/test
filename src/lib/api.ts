@@ -174,14 +174,29 @@ export async function createSession(qrToken: string, customerName: string, custo
   });
 }
 
-export async function getSessionOrders(sessionId: string) {
-  return request<Order[]>('GET', `/api/sessions/${sessionId}/orders`);
+export interface SessionOrder {
+  order_id: string;
+  status: string;
+  total: number;
+  billing_round: number;
+  placed_at: string;
+  items: Array<{ menuId: string; name: string; price: number; qty: number; note?: string }>;
+}
+
+export interface SessionOrdersResponse {
+  closed_at: string | null;
+  orders: SessionOrder[];
+}
+
+export async function getSessionOrders(sessionId: string): Promise<ApiResponse<SessionOrdersResponse>> {
+  return request<SessionOrdersResponse>('GET', `/api/sessions/${sessionId}/orders`);
 }
 
 // ============ ORDERS ============
 
 export interface Order {
   id: string;
+  order_id?: string;
   session_id: string;
   menu_id: string;
   quantity: number;
@@ -224,6 +239,19 @@ export interface Payment {
   amount: number;
   status: 'pending' | 'received' | 'cancelled';
   created_at: string;
+}
+
+export interface SessionPayment {
+  payment_id: string;
+  billing_round: number;
+  order_ids: string[];
+  amount: number;
+  method: string;
+  paid_at: string;
+}
+
+export async function getSessionPayments(sessionId: string): Promise<ApiResponse<SessionPayment[]>> {
+  return request<SessionPayment[]>('GET', `/api/sessions/${sessionId}/payments`);
 }
 
 export async function recordPayment(sessionId: string, amount: number, paymentMethod: 'card' | 'cash' = 'cash') {

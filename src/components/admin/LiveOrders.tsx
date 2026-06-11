@@ -10,6 +10,7 @@ export interface LiveOrder {
   total: number;
   status: "received" | "kitchen" | "ready" | "served" | "cancelled";
   created_at: string;
+  billing_round: number;
 }
 
 interface LiveOrdersProps {

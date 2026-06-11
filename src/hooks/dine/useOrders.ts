@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import type { CartItem } from "@/components/dine/CartScreen";
 import type { OrderBatch } from "@/components/dine/OrderTracker";
 import * as api from "@/lib/api";
+import type { SessionOrder } from "@/lib/api";
 
 export const API_STATUS_MAP: Record<string, OrderBatch["status"]> = {
   placed: "received",
@@ -66,5 +67,24 @@ export function useOrders() {
     );
   }, []);
 
-  return { orders, isSubmitting, placeOrder, applySSEStatusChange };
+  const restoreOrders = useCallback((fetched: SessionOrder[]) => {
+    const batches: OrderBatch[] = fetched.map((o) => ({
+      id: o.order_id,
+      items: o.items.map((i) => ({
+        menuId: i.menuId,
+        name: i.name,
+        price: Number(i.price),
+        qty: i.qty,
+        note: i.note,
+      })),
+      total: o.total,
+      status: API_STATUS_MAP[o.status] ?? (o.status as OrderBatch["status"]),
+      placedAt: new Date(o.placed_at).getTime(),
+      billingRound: o.billing_round,
+    }));
+    setOrders(batches);
+    setNextOrderId(batches.length + 1);
+  }, []);
+
+  return { orders, isSubmitting, placeOrder, applySSEStatusChange, restoreOrders };
 }

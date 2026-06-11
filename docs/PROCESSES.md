@@ -11,10 +11,23 @@ Detailed step-by-step breakdown of every major flow in the system.
 ```
 Customer scans table QR code
   → URL: /dine?table=T01&token=<uuid>
-  → dine/page.tsx mounts, runs initializePage()
-  → Reads URL params: table ID + QR token
-  → Checks sessionStorage for existing session (riwayat_session_id, riwayat_user)
-  → Fetches menu from GET /api/menu (concurrent with session check)
+  → dine/page.tsx mounts, runs init()
+
+Early table check (before anything else):
+  → GET /api/tables/{qr_token}
+  → If table.status === 'disabled' → show "Table Not Available" screen (stop)
+  → If non-200 → show session-error screen (invalid QR) (stop)
+
+Session validation (if riwayat_session_id in sessionStorage):
+  → GET /api/sessions/{session_id}/orders
+  → 404 → clear sessionStorage, show session-error (stop)
+  → closed_at non-null → remove session_id + table_id from storage,
+                          show "Session Cleared" screen (stop)
+  → 200 + orders → restoreOrders() — populates OrderTracker without re-ordering
+
+  → Fetch menu concurrently
+  → If no riwayat_user → show UserDetailsScreen
+  → Else show WelcomeScreen (or menu if ?screen=menu)
 ```
 
 ### 1.2 First-Time Customer (No Stored Session)
@@ -48,9 +61,11 @@ Frontend:
 
 ```
 riwayat_user found in sessionStorage
+  → Session validated and orders restored (see 1.1 above)
   → Has QR token in URL? → POST /api/sessions (returns existing session or creates new)
-  → No QR token? → Use stored session_id directly
+  → No QR token? → Use stored session_id directly (orders already restored from DB)
   → Navigate to WelcomeScreen (or "menu" if ?screen=menu)
+  → useBilling restores paidRounds from GET /api/sessions/{id}/payments on mount
 ```
 
 ### 1.4 Browsing Menu
@@ -123,6 +138,11 @@ Dine client (via SSE):
   → useDineStream receives session:closed
   → sessionStorage cleared (session_id, table_id, user)
   → Customer shown session-error screen: "Please re-scan the QR code"
+  
+  If customer refreshes/reopens tab after reset (tab was closed during reset):
+  → init() calls GET /api/sessions/{id}/orders → closed_at is set
+  → session_id + table_id removed from sessionStorage (riwayat_user preserved)
+  → Customer shown "Session Cleared" screen instead of confusing session-error
 ```
 
 ### 1.7 Calling Waiter / Filing Complaint
@@ -160,22 +180,26 @@ Customer on Bill screen → "Pay Now" → PaymentSheet opens
   → POST /api/sessions/{id}/payment { amount, payment_method }
   
 Backend:
-  1. Get session (billing_round, table_id)
-  2. Get all order_ids for session
+  1. Get session (billing_round, table_id) — capture billing_round BEFORE update
+  2. Get order_ids WHERE session_id AND billing_round = current round (scoped, not all session orders)
   3. INSERT payments (session_id, table_id, billing_round, order_ids[], amount, method)
   4. UPDATE sessions SET total_paid += amount, billing_round += 1
   5. Emit 'payment:received' to admin stream
+  6. Emit 'payment:received' to dine stream → { billing_round, order_ids, amount, method, paid_at }
 
-Frontend:
-  → useBilling.onPaymentSuccess()
-  → Mark all current orders' billing rounds as paid
-  → Increment local billing round counter
-  → Toast: "Payment recorded successfully!"
+Frontend (dine):
+  → useDineStream receives payment:received
+  → useBilling.applyPaymentReceived(billing_round) — marks round as paid instantly
+  → Bill screen updates without reload
+
+Frontend (manual Pay Now flow):
+  → useBilling.onPaymentSuccess() — same effect via local state
 
 Admin dashboard:
   → payment:received SSE received
   → Toast: "New payment received"
-  → PaymentsTab re-fetches automatically (paymentsRefreshTick)
+  → PaymentsTab + TablesGrid re-fetch automatically
+  → View Bill modal: orders show "Paid" badge; "Mark as Paid" shows unpaid balance only
 ```
 
 ---

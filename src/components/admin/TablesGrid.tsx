@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
-import type { Table } from "@/lib/api";
+import type { Table, SessionPayment } from "@/lib/api";
 import type { LiveOrder } from "./LiveOrders";
 
 function formatTimeAgo(isoStr: string) {
@@ -35,6 +35,14 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [qrLoading, setQrLoading]     = useState(false);
   const [qrBust, setQrBust]           = useState(0);
+  const [billPayments, setBillPayments] = useState<SessionPayment[]>([]);
+
+  useEffect(() => {
+    if (!billTable?.active_session_id) { setBillPayments([]); return; }
+    api.getSessionPayments(billTable.active_session_id).then((res) => {
+      setBillPayments(res.status === 200 && res.data ? res.data : []);
+    });
+  }, [billTable?.active_session_id]);
 
   useEffect(() => {
     api.fetchAdminTables().then((res) => {
@@ -317,73 +325,91 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
             </div>
 
             <div className="modal-body" id="table-bill-body">
-              {tableOrders(billTable.label).length === 0 ? (
-                <div style={{ color: "var(--clr-muted)", textAlign: "center", padding: "2rem" }}>
-                  No active orders for this table
-                </div>
-              ) : (
-                <>
-                  {tableOrders(billTable.label).map((o) => (
-                    <div key={o.id} className="bill-batch">
-                      <div className="bill-batch-head">
-                        <span>#{o.id.slice(0, 8)} · {formatTimeAgo(o.created_at)}</span>
-                        <span className={`badge badge-${o.status}`}>{o.status}</span>
-                      </div>
-                      {o.items.map((it, i) => (
-                        <div key={i} className="bill-item-row">
-                          <span>{it.quantity}× {it.name}</span>
-                          <span>PKR {(Number(it.price || 0) * Number(it.quantity || 1)).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                  <div className="bill-grand-total">
-                    <span>Grand Total</span>
-                    <span>PKR {tableTotal(billTable.label).toLocaleString()}</span>
+              {(() => {
+                const billOrders = tableOrders(billTable.label);
+                const paidOrderIds = new Set(billPayments.flatMap((p) => p.order_ids));
+                const grandTotal = tableTotal(billTable.label);
+                const unpaid = grandTotal - (billTable.session_total_paid || 0);
+
+                if (billOrders.length === 0) return (
+                  <div style={{ color: "var(--clr-muted)", textAlign: "center", padding: "2rem" }}>
+                    No active orders for this table
                   </div>
-                </>
-              )}
+                );
+
+                return (
+                  <>
+                    {billOrders.map((o, idx) => (
+                      <div key={o.id} className="bill-batch">
+                        <div className="bill-batch-head">
+                          <span>Order #{idx + 1} · {formatTimeAgo(o.created_at)}</span>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            {paidOrderIds.has(o.id) && <span className="badge badge-paid">Paid</span>}
+                            <span className={`badge badge-${o.status}`}>{o.status}</span>
+                          </div>
+                        </div>
+                        {o.items.map((it, i) => (
+                          <div key={i} className="bill-item-row">
+                            <span>{it.quantity}× {it.name}</span>
+                            <span>PKR {(Number(it.price || 0) * Number(it.quantity || 1)).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                    <div className="bill-grand-total">
+                      <span>Grand Total</span>
+                      <span>PKR {grandTotal.toLocaleString()}</span>
+                    </div>
+                    {(billTable.session_total_paid || 0) > 0 && unpaid > 0 && (
+                      <div className="bill-grand-total" style={{ opacity: 0.7 }}>
+                        <span>Paid so far</span>
+                        <span>PKR {(billTable.session_total_paid || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="modal-footer">
-              <button className="btn-ghost" onClick={() => setBillTable(null)}>Close</button>
-              {billTable.session_total_paid && billTable.session_total_paid >= tableTotal(billTable.label) && tableTotal(billTable.label) > 0 ? (
-                <button className="btn-primary btn-paid-done" disabled>
-                  <i className="ri-check-line"></i> Paid
-                </button>
-              ) : (
-                <button 
-                  id="btn-mark-paid" 
-                  className="btn-primary" 
-                  onClick={async () => {
-                    if (billTable.active_session_id) {
-                      try {
-                        await api.recordPayment(billTable.active_session_id, tableTotal(billTable.label), 'cash');
-                        alert("Payment recorded successfully");
-                        // Optimistically update local state so the modal re-renders
-                        setTables(prev => prev.map(tb => tb.id === billTable.id ? { ...tb, session_total_paid: tableTotal(billTable.label) } : tb));
-                        setBillTable(prev => prev ? { ...prev, session_total_paid: tableTotal(billTable.label) } : null);
-                      } catch (e) {
-                        console.error("Payment failed", e);
-                        alert("Failed to record payment");
-                      }
-                    } else {
-                      alert("No active session for this table to record payment.");
-                    }
-                  }}
-                >
-                  <i className="ri-secure-payment-line"></i> Mark as Paid
-                </button>
-              )}
-              {billTable.session_total_paid && billTable.session_total_paid >= tableTotal(billTable.label) && tableTotal(billTable.label) > 0 ? (
-                <button
-                  id="btn-reset-table"
-                  className="btn-danger"
-                  onClick={() => handleReset(billTable.id)}
-                >
-                  Reset Table
-                </button>
-              ) : null}
+              {(() => {
+                const grandTotal = tableTotal(billTable.label);
+                const unpaid = grandTotal - (billTable.session_total_paid || 0);
+                return (
+                  <>
+                    <button className="btn-ghost" onClick={() => setBillTable(null)}>Close</button>
+                    {unpaid <= 0 && grandTotal > 0 ? (
+                      <>
+                        <button className="btn-primary btn-paid-done" disabled>
+                          <i className="ri-check-line"></i> Paid
+                        </button>
+                        <button id="btn-reset-table" className="btn-danger" onClick={() => handleReset(billTable.id)}>
+                          Reset Table
+                        </button>
+                      </>
+                    ) : unpaid > 0 ? (
+                      <button
+                        id="btn-mark-paid"
+                        className="btn-primary"
+                        onClick={async () => {
+                          if (!billTable.active_session_id) return;
+                          try {
+                            await api.recordPayment(billTable.active_session_id, unpaid, 'cash');
+                            const newPaid = (billTable.session_total_paid || 0) + unpaid;
+                            setTables((prev) => prev.map((tb) => tb.id === billTable.id ? { ...tb, session_total_paid: newPaid } : tb));
+                            setBillTable((prev) => prev ? { ...prev, session_total_paid: newPaid } : null);
+                          } catch {
+                            // payment failed — leave state unchanged so admin can retry
+                          }
+                        }}
+                      >
+                        <i className="ri-secure-payment-line"></i> Mark as Paid
+                        {(billTable.session_total_paid || 0) > 0 && ` (PKR ${unpaid.toLocaleString()})`}
+                      </button>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
