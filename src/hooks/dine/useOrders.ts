@@ -37,7 +37,7 @@ export function useOrders() {
         if (response.status === 200 || response.status === 201) {
           const subtotal = cart.reduce((s, c) => s + c.price * c.qty, 0);
           const batch: OrderBatch = {
-            id: response.data?.id || String(nextOrderId),
+            id: response.data?.order_id || response.data?.id || String(nextOrderId),
             items: [...cart],
             total: subtotal,
             status: "received",

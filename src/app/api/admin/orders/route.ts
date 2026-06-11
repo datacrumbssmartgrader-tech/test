@@ -29,13 +29,14 @@ export async function GET(request: NextRequest) {
         o.placed_at as created_at,
         COALESCE(
           json_agg(
-            json_build_object('name', oi.name, 'quantity', oi.qty, 'price', oi.price, 'notes', oi.note)
-          ) FILTER (WHERE oi.id IS NOT NULL), 
+            json_build_object('name', oi.name, 'quantity', oi.qty, 'price', oi.price, 'notes', oi.note, 'prep_time', mi.prep_time)
+          ) FILTER (WHERE oi.id IS NOT NULL),
           '[]'
         ) as items
       FROM orders o
       JOIN restaurant_tables rt ON o.table_id = rt.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
       GROUP BY o.id, rt.label
       ORDER BY o.placed_at DESC
       LIMIT 100

@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
 
     for (const item of items) {
       const menuResult = await sql`
-        SELECT id, name, price, available
-        FROM menu_items 
+        SELECT id, name, price, available, prep_time
+        FROM menu_items
         WHERE id = ${item.menu_item_id}::uuid
       `;
 
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
         price: menuItem.price,
         quantity: item.quantity,
         note: item.special_instructions || null,
+        prep_time: menuItem.prep_time ? Number(menuItem.prep_time) : 15,
       });
     }
 

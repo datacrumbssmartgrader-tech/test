@@ -116,7 +116,7 @@ function AdminDashboard() {
     return <LoginScreen />;
   }
 
-  const activeOrderCount = orders.filter((o) => ["placed", "kitchen", "ready"].includes(o.status)).length;
+  const activeOrderCount = orders.filter((o) => ["received", "kitchen", "ready"].includes(o.status)).length;
 
   return (
     <div id="dashboard" className="dashboard">
