@@ -12,19 +12,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     // Support both field naming conventions:
     // - dine app sends:  { table_id, session_id, type, message }
-    const table_id   = body.table_id   || null;
+    let table_id     = body.table_id   || null;
     const session_id = body.session_id || null;
     const alert_type = (body.alert_type || body.type) as string | undefined;
     const message    = body.message    || null;
 
-    if (!table_id) {
-      return NextResponse.json({ error: 'Missing required field: table_id' }, { status: 400 });
-    }
     if (!alert_type) {
       return NextResponse.json({ error: 'Missing required field: type' }, { status: 400 });
     }
     if (!session_id) {
       return NextResponse.json({ error: 'Missing required field: session_id' }, { status: 400 });
+    }
+
+    // Derive table_id from session if not supplied directly
+    if (!table_id) {
+      const sessionRow = await sql`
+        SELECT table_id FROM sessions WHERE id = ${session_id}::uuid LIMIT 1
+      `;
+      if (sessionRow.length === 0) {
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+      table_id = sessionRow[0].table_id;
     }
 
     // Fetch table label for display (restaurant_tables.id is TEXT, no cast needed)
@@ -62,6 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         id:          alert.id,
+        alert_id:    alert.id,
         table_id:    alert.table_id,
         table_label: tableLabel,
         type:        alert.type,

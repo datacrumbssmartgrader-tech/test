@@ -24,16 +24,16 @@ function sessionDuration(isoStr: string) {
 
 interface TablesGridProps {
   orders?: LiveOrder[];
+  refreshTick?: number;
 }
 
-export default function TablesGrid({ orders = [] }: TablesGridProps) {
+export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridProps) {
   const [tables, setTables]           = useState<Table[]>([]);
   const [isLoading, setIsLoading]     = useState(true);
   const [billTable, setBillTable]     = useState<Table | null>(null);
   const [qrTable,   setQrTable]       = useState<Table | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [qrLoading, setQrLoading]     = useState(false);
-  // Cache-bust key: increment to force <img> reload after regeneration
   const [qrBust, setQrBust]           = useState(0);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ export default function TablesGrid({ orders = [] }: TablesGridProps) {
       const list: Table[] = Array.isArray(data) ? data : (data?.tables ?? data?.items ?? []);
       setTables(list);
     }).finally(() => setIsLoading(false));
-  }, []);
+  }, [refreshTick]);
 
   const updateStatus = async (id: string, status: string) => {
     setProcessingId(id);
@@ -50,6 +50,19 @@ export default function TablesGrid({ orders = [] }: TablesGridProps) {
       const res = await api.updateAdminTableStatus(id, status);
       if (res.status === 200) {
         setTables((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+      }
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReset = async (id: string) => {
+    setProcessingId(id);
+    try {
+      const res = await api.resetAdminTable(id);
+      if (res.status === 200) {
+        setTables((prev) => prev.map((t) => t.id === id ? { ...t, status: "empty", active_session_id: undefined } : t));
+        setBillTable(null);
       }
     } finally {
       setProcessingId(null);
@@ -184,7 +197,7 @@ export default function TablesGrid({ orders = [] }: TablesGridProps) {
                     <button
                       data-action="reset-table"
                       className="danger"
-                      onClick={() => updateStatus(t.id, "empty")}
+                      onClick={() => handleReset(t.id)}
                       disabled={processingId === t.id}
                     >
                       Reset
@@ -366,10 +379,7 @@ export default function TablesGrid({ orders = [] }: TablesGridProps) {
                 <button
                   id="btn-reset-table"
                   className="btn-danger"
-                  onClick={() => {
-                    updateStatus(billTable.id, "empty");
-                    setBillTable(null);
-                  }}
+                  onClick={() => handleReset(billTable.id)}
                 >
                   Reset Table
                 </button>

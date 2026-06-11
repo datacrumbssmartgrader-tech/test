@@ -23,7 +23,6 @@
   --font-cinzel:  'Cinzel', serif;
   --font-body:    'Mulish', sans-serif;
   --font-ui:      'Poppins', sans-serif;
-  --font-urdu:    'Noto Nastaliq Urdu', serif;
 
   /* ── Border Radius ──────────────────────────── */
   --radius:    14px;
@@ -58,7 +57,6 @@
   --ff-cinzel:  var(--font-cinzel);
   --ff-body:    var(--font-body);
   --ff-ui:      var(--font-ui);
-  --ff-urdu:    var(--font-urdu);
 
   /* Transition timing (not in @theme — not a utility) */
   --trans:      0.28s cubic-bezier(0.4,0,0.2,1);

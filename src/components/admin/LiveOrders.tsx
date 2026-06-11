@@ -92,7 +92,7 @@ export default function LiveOrders({ orders, onUpdateStatus }: LiveOrdersProps) 
             <p>No live orders — waiting for stream</p>
           </div>
         ) : (
-          orders.map((order) => {
+          orders.map((order, idx) => {
             const next = nextStatus(order.status);
             const isLoading = loadingId === order.id;
             const canAct = order.status !== "served" && order.status !== "cancelled";
@@ -101,7 +101,7 @@ export default function LiveOrders({ orders, onUpdateStatus }: LiveOrdersProps) 
               <div key={order.id} className="order-card">
                 <div className="order-card-head">
                   <div className="order-table-badge">{order.table_number || "—"}</div>
-                  <div className="order-id">#{String(order.id || "").slice(0, 8)} · {order.created_at ? formatTime(order.created_at) : ""}</div>
+                  <div className="order-id">Order #{idx + 1} · {order.created_at ? formatTime(order.created_at) : ""}</div>
                   <div className={`badge ${STATUS_BADGE[order.status] || "badge-received"}`}>
                     {STATUS_LABEL[order.status] || order.status}
                   </div>

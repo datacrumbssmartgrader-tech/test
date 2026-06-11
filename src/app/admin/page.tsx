@@ -13,54 +13,7 @@ import AlertsPanel from "@/components/admin/AlertsPanel";
 import PaymentsTab from "@/components/admin/PaymentsTab";
 import TablesGrid from "@/components/admin/TablesGrid";
 import OrderHistory from "@/components/admin/OrderHistory";
-
-// Minimal inline login screen based on existing CSS
-function LoginScreen() {
-  const { login } = useAuth();
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState(false);
-
-  const handleLogin = () => {
-    // Only '1234' works for now based on legacy logic
-    if (pin.trim() === "1234") {
-      login(pin);
-      setError(false);
-    } else {
-      setError(true);
-      setPin("");
-    }
-  };
-
-  return (
-    <div className="login-screen" style={{ zIndex: 100, position: "fixed", inset: 0, backgroundColor: "var(--clr-bg)" }}>
-      <div className="login-bg"></div>
-      <div className="login-card">
-        <div className="login-logo">
-          <div className="login-logo-en">ROOSTER&apos;S DEN</div>
-          <div className="login-logo-ur">روایات</div>
-        </div>
-        <p className="login-subtitle">Admin Dashboard</p>
-        <div style={{ marginTop: "2rem" }}>
-          <label className="pin-label">Enter Staff PIN</label>
-          <input
-            type="password"
-            className="pin-field"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            placeholder="••••"
-            maxLength={4}
-            autoFocus
-          />
-          {error && <div className="login-error" style={{ color: "var(--clr-error)", fontSize: "0.85rem", marginTop: "0.5rem" }}>Incorrect PIN. Please try again.</div>}
-          <button className="login-btn btn-primary" onClick={handleLogin} style={{ width: "100%", marginTop: "1.5rem" }}>
-            Access Dashboard <i className="ri-arrow-right-line"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import LoginScreen from "@/components/admin/LoginScreen";
 
 const SECTION_TITLES: Record<string, string> = {
   orders: "Live Orders",
@@ -76,24 +29,29 @@ function AdminDashboard() {
   const [activeSection, setActiveSection] = useState("orders");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Global state enriched by SSE
   const [orders, setOrders] = useState<LiveOrder[]>([]);
   const [alertCount, setAlertCount] = useState(0);
+  const [tablesRefreshTick, setTablesRefreshTick] = useState(0);
+  const [menuRefreshTick, setMenuRefreshTick] = useState(0);
+  const [paymentsRefreshTick, setPaymentsRefreshTick] = useState(0);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
 
-  // Initial fetch of active orders
+  // Initial data fetch once authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      api.fetchAdminOrders()
-        .then((ordersRes) => {
-          if (ordersRes.status === 200 && ordersRes.data) {
-            setOrders(ordersRes.data);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to fetch initial admin data", err);
-        });
-    }
+    if (!isAuthenticated) return;
+
+    // Fetch live orders
+    api.fetchAdminOrders().then((res) => {
+      if (res.status === 200 && res.data) setOrders(res.data);
+    });
+
+    // Initialize alert badge from backend
+    api.fetchAdminAlerts().then((res) => {
+      if (res.status === 200 && res.data) {
+        const undismissed = res.data.filter((a: any) => !a.dismissed).length;
+        setAlertCount(undismissed);
+      }
+    });
   }, [isAuthenticated]);
 
   useAdminStream({
@@ -112,13 +70,24 @@ function AdminDashboard() {
         setOrders((prev) => [newOrder, ...prev]);
         showToast("New order received", "success");
       } else if (event.type === "order:status_changed") {
-        const { id, status } = event.data;
-        setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+        const raw = event.data as any;
+        const orderId = raw.order_id || raw.id;
+        const status = raw.status;
+        setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
       } else if (event.type === "alert:created") {
         setAlertCount((prev) => prev + 1);
         showToast("New waiter alert received", "info");
       } else if (event.type === "payment:received") {
+        setPaymentsRefreshTick((prev) => prev + 1);
         showToast("New payment received", "success");
+      } else if (event.type === "table:update") {
+        setTablesRefreshTick((prev) => prev + 1);
+      } else if (
+        event.type === "menu:item_added" ||
+        event.type === "menu:item_updated" ||
+        event.type === "menu:item_deleted"
+      ) {
+        setMenuRefreshTick((prev) => prev + 1);
       }
     },
     onError: () => {},
@@ -140,7 +109,7 @@ function AdminDashboard() {
   };
 
   if (isLoading) {
-    return <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading...</div>;
+    return <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading…</div>;
   }
 
   if (!isAuthenticated) {
@@ -151,7 +120,12 @@ function AdminDashboard() {
 
   return (
     <div id="dashboard" className="dashboard">
-      <div id="sidebar-overlay" className={sidebarOpen ? "open visible" : ""} onClick={() => setSidebarOpen(false)} style={sidebarOpen ? { pointerEvents: "auto" } : { pointerEvents: "none" }} />
+      <div
+        id="sidebar-overlay"
+        className={sidebarOpen ? "open visible" : ""}
+        onClick={() => setSidebarOpen(false)}
+        style={sidebarOpen ? { pointerEvents: "auto" } : { pointerEvents: "none" }}
+      />
 
       <AdminSidebar
         activeSection={activeSection}
@@ -164,41 +138,41 @@ function AdminDashboard() {
       />
 
       <div id="main" className="main">
-        <AdminTopbar
-          title={SECTION_TITLES[activeSection]}
-          onMenuOpen={() => setSidebarOpen(true)}
-          user={user}
-        />
+        <AdminTopbar title={SECTION_TITLES[activeSection]} onMenuOpen={() => setSidebarOpen(true)} user={user} />
 
-        <section id="section-orders" className={`section ${activeSection === "orders" ? "active" : ""}`} style={{ display: activeSection === "orders" ? "block" : "none" }}>
-          {activeSection === "orders" && <LiveOrders orders={orders} onUpdateStatus={handleUpdateOrderStatus} />}
+        <section className={`section${activeSection === "orders" ? " active" : ""}`}>
+          <LiveOrders orders={orders} onUpdateStatus={handleUpdateOrderStatus} />
         </section>
 
-        <section id="section-tables" className={`section ${activeSection === "tables" ? "active" : ""}`} style={{ display: activeSection === "tables" ? "block" : "none" }}>
-          {activeSection === "tables" && <TablesGrid orders={orders} />}
+        <section className={`section${activeSection === "tables" ? " active" : ""}`}>
+          <TablesGrid orders={orders} refreshTick={tablesRefreshTick} />
         </section>
 
-        <section id="section-menu" className={`section ${activeSection === "menu" ? "active" : ""}`} style={{ display: activeSection === "menu" ? "block" : "none" }}>
-          {activeSection === "menu" && <MenuManager />}
+        <section className={`section${activeSection === "menu" ? " active" : ""}`}>
+          <MenuManager refreshTick={menuRefreshTick} />
         </section>
 
-        <section id="section-alerts" className={`section ${activeSection === "alerts" ? "active" : ""}`} style={{ display: activeSection === "alerts" ? "block" : "none" }}>
-          {activeSection === "alerts" && <AlertsPanel onBadgeChange={setAlertCount} refreshTrigger={alertCount} />}
+        <section className={`section${activeSection === "alerts" ? " active" : ""}`}>
+          <AlertsPanel onBadgeChange={setAlertCount} refreshTrigger={alertCount} />
         </section>
 
-        <section id="section-history" className={`section ${activeSection === "history" ? "active" : ""}`} style={{ display: activeSection === "history" ? "block" : "none" }}>
-          {activeSection === "history" && <OrderHistory orders={orders} />}
+        <section className={`section${activeSection === "history" ? " active" : ""}`}>
+          <OrderHistory orders={orders} />
         </section>
 
-        <section id="section-payments" className={`section ${activeSection === "payments" ? "active" : ""}`} style={{ display: activeSection === "payments" ? "block" : "none" }}>
-          {activeSection === "payments" && <PaymentsTab orders={orders} />}
+        <section className={`section${activeSection === "payments" ? " active" : ""}`}>
+          <PaymentsTab orders={orders} refreshTick={paymentsRefreshTick} />
         </section>
       </div>
 
       {toast && (
         <div id="toastStack" className="toast-stack">
-          <div className={`toast-card toast-in`}>
-            <i className={toast.type === "success" ? "ri-checkbox-circle-fill toast-icon toast-success" : toast.type === "error" ? "ri-error-warning-fill toast-icon toast-error" : "ri-information-fill toast-icon toast-info"} />
+          <div className="toast-card toast-in">
+            <i className={
+              toast.type === "success" ? "ri-checkbox-circle-fill toast-icon toast-success" :
+              toast.type === "error" ? "ri-error-warning-fill toast-icon toast-error" :
+              "ri-information-fill toast-icon toast-info"
+            } />
             <div className="toast-content">{toast.msg}</div>
           </div>
         </div>

@@ -145,6 +145,10 @@ export async function regenerateAdminTableQR(tableId: string): Promise<ApiRespon
   return request<{ qr_token: string }>('POST', `/api/admin/tables/${tableId}/regenerate-qr`);
 }
 
+export async function resetAdminTable(tableId: string): Promise<ApiResponse<{ success: boolean }>> {
+  return request<{ success: boolean }>('POST', `/api/admin/tables/${tableId}/reset`);
+}
+
 // QR image URL (served as PNG directly — use as <img src=...>)
 export function getTableQRImageUrl(tableId: string): string {
   return `/api/admin/tables/${tableId}/qr`;

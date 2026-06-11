@@ -51,10 +51,6 @@ img { display: block; }
 .login-logo-en {
   @apply font-cinzel text-[1.6rem] font-semibold tracking-[.18em] text-primary;
 }
-.login-logo-ur {
-  @apply font-['Noto_Nastaliq_Urdu',serif] text-[1.1rem] text-gold;
-  direction: rtl;
-}
 .login-subtitle {
   @apply text-center font-ui text-[.75rem] font-medium tracking-[.12em] uppercase text-muted mb-7;
 }

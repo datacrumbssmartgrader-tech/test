@@ -1,7 +1,7 @@
 import "./admin.css";
 
 export const metadata = {
-  title: "Admin — Rooster's Den",
+  title: "Admin — AI-Restaurant",
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

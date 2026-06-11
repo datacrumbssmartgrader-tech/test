@@ -171,9 +171,9 @@ export default function OrderHistory({ orders }: OrderHistoryProps) {
                   No orders match your filters
                 </td>
               </tr>
-            ) : filtered.map((o) => (
+            ) : filtered.map((o, idx) => (
               <tr key={o.id}>
-                <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>#{o.id.slice(0, 8)}</td>
+                <td>Order #{idx + 1}</td>
                 <td>{o.table_number || "—"}</td>
                 <td>{new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td>
                 <td style={{ maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

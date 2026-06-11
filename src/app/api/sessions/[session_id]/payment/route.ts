@@ -63,10 +63,11 @@ export async function POST(
 
     const payment = paymentResult[0];
 
-    // Update session total_paid
+    // Update session total_paid and increment billing_round
     await sql`
-      UPDATE sessions 
-      SET total_paid = total_paid + ${amount}::numeric
+      UPDATE sessions
+      SET total_paid = total_paid + ${amount}::numeric,
+          billing_round = billing_round + 1
       WHERE id = ${sessionId}::uuid
     `;
 

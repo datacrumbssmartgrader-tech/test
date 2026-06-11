@@ -33,17 +33,20 @@ export default function AlertsPanel({ onBadgeChange, refreshTrigger }: AlertsPan
 
   const loadAlerts = async () => {
     const res = await api.fetchAdminAlerts();
-    console.log('[AlertsPanel] fetchAdminAlerts status:', res.status, 'error:', res.error);
-    console.log('[AlertsPanel] raw data:', res.data);
     const data = res.data as any;
     const list: Alert[] = Array.isArray(data) ? data : (data?.alerts ?? data?.items ?? []);
-    console.log('[AlertsPanel] parsed list length:', list.length, list);
-    // Normalize: support both {id} and {alert_id} fields
     const normalized = list.map((a: any) => ({ ...a, id: a.id || a.alert_id }));
-    // Show all non-resolved from DB
     const active = normalized.filter((a: any) => a.status !== 'resolved' && !a.resolved);
-    console.log('[AlertsPanel] active alerts:', active.length, active);
-    setAlerts(active.map((a: any) => ({ ...a, _resolved: false })));
+
+    setAlerts((prev) => {
+      // Preserve locally-resolved cards — they stay visible until "Clear Resolved" is clicked
+      const locallyResolved = prev.filter((a) => a._resolved);
+      const newActiveIds = new Set(active.map((a: any) => a.id));
+      const freshActive = active.map((a: any) => ({ ...a, _resolved: false }));
+      const preservedResolved = locallyResolved.filter((a) => !newActiveIds.has(a.id));
+      return [...freshActive, ...preservedResolved];
+    });
+
     onBadgeChange(active.length);
   };
 
@@ -70,14 +73,9 @@ export default function AlertsPanel({ onBadgeChange, refreshTrigger }: AlertsPan
     }
   };
 
-  // Dismiss All: resolve any pending ones on DB, then clear the whole list
-  const handleDismissAll = async () => {
-    const pending = alerts.filter((a) => !a._resolved);
-    for (const alert of pending) {
-      await api.resolveAlert(alert.id);
-    }
-    setAlerts([]);
-    onBadgeChange(0);
+  // Clear Resolved: remove only faded (already resolved) cards from view
+  const handleDismissAll = () => {
+    setAlerts((prev) => prev.filter((a) => !a._resolved));
   };
 
   const pendingCount = alerts.filter((a) => !a._resolved).length;
@@ -95,10 +93,10 @@ export default function AlertsPanel({ onBadgeChange, refreshTrigger }: AlertsPan
               : "No active alerts"}
           </p>
         </div>
-        {alerts.length > 0 && (
+        {alerts.some((a) => a._resolved) && (
           <div className="section-actions">
             <button className="btn-ghost" onClick={handleDismissAll}>
-              <i className="ri-check-double-line"></i> Dismiss All
+              <i className="ri-delete-bin-line"></i> Clear Resolved
             </button>
           </div>
         )}
@@ -119,7 +117,7 @@ export default function AlertsPanel({ onBadgeChange, refreshTrigger }: AlertsPan
             <div
               key={alert.id}
               className={`alert-card ${alert._resolved ? "alert-card-resolved" : ""}`}
-              style={alert._resolved ? { opacity: 0.5 } : undefined}
+              style={alert._resolved ? { opacity: 0.45, pointerEvents: "none", transition: "opacity 0.4s ease" } : { transition: "opacity 0.4s ease" }}
             >
               <div className="alert-card-head">
                 <span className="alert-table badge badge-received">{(alert as any).table_label || alert.table_id}</span>

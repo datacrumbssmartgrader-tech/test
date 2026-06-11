@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
+import { eventManager } from '@/lib/events';
 
 /**
  * POST /api/sessions
@@ -52,6 +53,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Return existing open session instead of creating a duplicate
+    const existingSession = await sql`
+      SELECT s.id, s.table_id, s.opened_at, s.customer_id,
+             c.name AS customer_name_db
+      FROM sessions s
+      LEFT JOIN customers c ON c.id = s.customer_id
+      WHERE s.table_id = ${tableId} AND s.closed_at IS NULL
+      LIMIT 1
+    `;
+    if (existingSession.length > 0) {
+      const s = existingSession[0];
+      // Defensive: ensure table reflects active state (covers partial reset / race conditions)
+      await sql`
+        UPDATE restaurant_tables
+        SET status = 'active', active_session_id = ${s.id}
+        WHERE id = ${tableId} AND (status != 'active' OR active_session_id IS NULL)
+      `;
+      eventManager.emitToAdmin('table:update', {
+        table_id: tableId,
+        status: 'active',
+        active_session_id: s.id,
+      });
+      return NextResponse.json({
+        session_id: s.id,
+        customer_id: s.customer_id,
+        table_id: s.table_id,
+        customer_name: s.customer_name_db || customer_name,
+        opened_at: s.opened_at,
+        message: 'Session resumed',
+      }, { status: 200 });
+    }
+
     // Find or create customer by phone
     const existingCustomer = await sql`
       SELECT id, name, email, total_sessions, total_spent, last_visit
@@ -90,10 +123,16 @@ export async function POST(request: NextRequest) {
 
     // Update table to active with session
     await sql`
-      UPDATE restaurant_tables 
+      UPDATE restaurant_tables
       SET status = 'active', active_session_id = ${session.id}
       WHERE id = ${tableId}
     `;
+
+    eventManager.emitToAdmin('table:update', {
+      table_id: tableId,
+      status: 'active',
+      active_session_id: session.id,
+    });
 
     return NextResponse.json(
       {

@@ -39,7 +39,7 @@ export default function DineHeader({
       <div className="w-full">
         <header className="app-header">
           <div className="header-left">
-            <span className="header-logo">ROOSTER&apos;S DEN</span>
+            <span className="header-logo">AI-RESTAURANT</span>
             <span className="header-table">{tableNumber}</span>
           </div>
           <div className="header-right">

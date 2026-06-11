@@ -60,7 +60,7 @@ export default function OrderTracker({ orders, onBrowseMenu }: OrderTrackerProps
         </div>
       ) : (
         <div className="tracker-list">
-          {orders.map(batch => {
+          {orders.map((batch, idx) => {
             const groups = {
               Starters: batch.items.filter(i => i.cat === 'starters'),
               'Main Course': batch.items.filter(i => i.cat !== 'starters' && i.cat !== 'desserts'),
@@ -70,7 +70,7 @@ export default function OrderTracker({ orders, onBrowseMenu }: OrderTrackerProps
             return (
               <div key={batch.id} className="order-batch">
                 <div className="order-batch-header">
-                  <span className="order-batch-num">Order #{batch.id} &middot; {formatTime(batch.placedAt)}</span>
+                  <span className="order-batch-num">Order #{idx + 1} &middot; {formatTime(batch.placedAt)}</span>
                   <span className={`order-status-badge ${STATUS_CLASS[batch.status]}`}>
                     {STATUS_LABELS[batch.status]}
                   </span>

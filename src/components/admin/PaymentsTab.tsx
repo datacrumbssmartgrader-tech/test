@@ -6,6 +6,7 @@ import type { LiveOrder } from "./LiveOrders";
 
 interface PaymentsTabProps {
   orders?: LiveOrder[];
+  refreshTick?: number;
 }
 
 function formatDateTime(iso: string) {
@@ -118,7 +119,7 @@ function PayGraphChart({ orders, dateFrom, dateTo }: { orders: LiveOrder[], date
   );
 }
 
-export default function PaymentsTab({ orders = [] }: PaymentsTabProps) {
+export default function PaymentsTab({ orders = [], refreshTick = 0 }: PaymentsTabProps) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
@@ -137,7 +138,7 @@ export default function PaymentsTab({ orders = [] }: PaymentsTabProps) {
         status: p.status === 'confirmed' ? 'received' : p.status,
       })));
     }).finally(() => setIsLoading(false));
-  }, []);
+  }, [refreshTick]);
 
   const displayedPayments = filterByDate(payments, dateFrom, dateTo);
   const received = displayedPayments.filter((p) => p.status === "received");

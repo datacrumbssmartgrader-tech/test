@@ -28,8 +28,7 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
       <div className="login-bg"></div>
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-logo">
-          <span className="login-logo-en">ROOSTER'S DEN</span>
-          <span className="login-logo-ur">روایات</span>
+          <span className="login-logo-en">AI-RESTAURANT</span>
         </div>
         <p className="login-subtitle">Staff Access</p>
 

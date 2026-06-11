@@ -14,7 +14,7 @@ export default function WelcomeScreen({ tableNumber, onBrowseMenu, onCallWaiter 
     <div className={styles.screen}>
       <div className={styles.spacer}></div>
       <div className={styles.foreground}>
-        <h1 className={styles.heading}>ROOSTER&apos;S DEN</h1>
+        <h1 className={styles.heading}>AI-RESTAURANT</h1>
         <div className={styles.actions}>
           <span className={styles.badge}>
             Table: <span>{tableNumber || "—"}</span>

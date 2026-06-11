@@ -36,7 +36,7 @@ const EMPTY_FORM: FormData = {
   type: "single", components: [],
 };
 
-export default function MenuManager() {
+export default function MenuManager({ refreshTick = 0 }: { refreshTick?: number }) {
   const [items,       setItems]       = useState<MenuItem[]>([]);
   const [isLoading,   setIsLoading]   = useState(true);
   const [catFilter,   setCatFilter]   = useState("all");
@@ -54,7 +54,7 @@ export default function MenuManager() {
       const list: MenuItem[] = Array.isArray(data) ? data : (data?.items ?? data?.menu ?? []);
       setItems(list.map((i: any) => ({ ...i, price: Number(i.price) })));
     }).finally(() => setIsLoading(false));
-  }, []);
+  }, [refreshTick]);
 
   const filtered = catFilter === "all" ? items : items.filter((i) => i.category === catFilter);
 

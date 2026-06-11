@@ -17,10 +17,6 @@
 .sb-logo-en {
   @apply font-cinzel text-[1.1rem] font-semibold tracking-[.18em] text-gold;
 }
-.sb-logo-ur {
-  @apply font-['Noto_Nastaliq_Urdu',serif] text-[.85rem] text-[rgba(201,151,58,.6)];
-  direction: rtl;
-}
 .sidebar-nav {
   @apply flex-1 py-3 px-0 flex flex-col gap-[2px];
 }
