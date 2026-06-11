@@ -65,6 +65,7 @@ function AdminDashboard() {
           items: raw.items || [],
           total: raw.total,
           status: raw.status,
+          billing_round: raw.billing_round ?? 1,
           created_at: raw.placed_at || raw.created_at,
         };
         setOrders((prev) => [newOrder, ...prev]);

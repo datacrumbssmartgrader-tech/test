@@ -201,7 +201,7 @@ export interface Order {
   menu_id: string;
   quantity: number;
   notes?: string;
-  status: 'placed' | 'kitchen' | 'ready' | 'served' | 'cancelled';
+  status: 'received' | 'kitchen' | 'ready' | 'served' | 'cancelled';
   created_at: string;
 }
 

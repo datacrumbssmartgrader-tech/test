@@ -71,11 +71,15 @@ export function useOrders() {
     const batches: OrderBatch[] = fetched.map((o) => ({
       id: o.order_id,
       items: o.items.map((i) => ({
+        id: i.menuId,
         menuId: i.menuId,
         name: i.name,
         price: Number(i.price),
         qty: i.qty,
-        note: i.note,
+        note: i.note ?? '',
+        img: '',
+        cat: '',
+        prepTime: 0,
       })),
       total: o.total,
       status: API_STATUS_MAP[o.status] ?? (o.status as OrderBatch["status"]),
