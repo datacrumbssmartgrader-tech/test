@@ -6,7 +6,8 @@
 
 | # | Issue | Status |
 |---|-------|--------|
-| 16 | QR token UUID exposed in dine page URL (`?token=UUID`) | ❌ Remaining |
+| 17 | Table card shows previous session's orders after reset + new session | ✅ Done |
+| 16 | QR token UUID exposed in dine page URL (`?token=UUID`) | ✅ Done |
 | 1a | `useOrders.ts` reads `id` instead of `order_id` from POST response | ✅ Done |
 | 1b | `LiveOrders` card reconstructed: advance button, `#ORD-003` IDs, `⏱ prep_time`, status enum fix (`placed`→`received`) | ✅ Done |
 | 1c | `LiveOrders` — `⏱ prep_time` hidden for served orders; should stay visible (only hide for cancelled) | ✅ Done |
@@ -1021,3 +1022,39 @@ http://localhost:3000/dine?t=aB3kP9qR
 | `src/lib/api.ts` | Update `getTableByQR` endpoint path to `/api/tables/s/${token}` |
 
 **Backward compatibility:** The `params.get("t") ?? params.get("token")` fallback means any QR codes already printed with the old `?token=UUID` URL keep working until they are physically replaced or regenerated.
+
+---
+
+## Issue 16 — QR Token UUID Exposed in Dine Page URL (Implemented)
+
+### What Was Done
+
+Used a server-side redirect instead of the short_token approach above. A new API route `GET /api/scan/[token]` sets a short-lived cookie (`rw_qr_token`, 2-min TTL, non-HttpOnly) and returns a 302 redirect to `/dine`. The browser follows the redirect instantly — the UUID is visible for under a second during the redirect, then the URL bar shows `/dine` cleanly.
+
+### Changes Made ✅
+
+**New `src/app/api/scan/[token]/route.ts`** — GET handler: validates UUID format, sets `rw_qr_token` cookie, returns 302 to `/dine`.
+
+**`src/app/api/admin/tables/[id]/qr/route.ts`** — QR URL changed from `` `${baseUrl}/dine?table=${tableId}&token=${table.qr_token}` `` to `` `${baseUrl}/api/scan/${table.qr_token}` ``.
+
+**`src/app/dine/page.tsx`** — Token reading changed from `params.get("token")` to `document.cookie` lookup for `rw_qr_token` (consumed immediately after reading), with `params.get("token")` fallback for old printed QR codes. `setTableNumber` now uses `tableCheck.data.label` from the API response instead of the URL param.
+
+---
+
+## Issue 17 — Table Card Shows Previous Session's Orders After Reset + New Session
+
+### Symptom
+
+Admin resets a table. New customer scans QR and a new session starts. The table card immediately shows the old session's order count and running total instead of starting fresh.
+
+### Root Cause
+
+`tableOrders()` in `TablesGrid.tsx` filtered only by `table_number` (the label like "T04"), never by session. The `orders` array in `admin/page.tsx` is fetched once on auth and never purged. After a reset, old orders for the same table label remain in the array. When the new session starts, `isActive` becomes true again and those stale orders are counted.
+
+Additionally, `o.session_id` was not included in the `GET /api/admin/orders` SQL response, so there was no field available to filter on.
+
+### Changes Made ✅
+
+**`src/app/api/admin/orders/route.ts`** — Added `o.session_id` to the SELECT. The existing `...o` spread in the mapped response includes it automatically.
+
+**`src/components/admin/TablesGrid.tsx`** — `tableOrders`, `tableTotal`, and `firstOrderTime` now take a `sessionId: string | null` second parameter. When `sessionId` is null (table is empty/reset), they return empty. When set, they filter `o.session_id === sessionId` in addition to the label match. All six call sites updated to pass `t.active_session_id ?? null` (or `billTable.active_session_id ?? null` in the bill modal).

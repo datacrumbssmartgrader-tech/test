@@ -48,7 +48,7 @@ export async function GET(
 
     const table = tables[0];
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-const qrUrl = `${baseUrl}/dine?table=${tableId}&token=${table.qr_token}`;
+const qrUrl = `${baseUrl}/api/scan/${table.qr_token}`;
     // Generate QR code as PNG buffer
     const qrCodeBuffer = await QRCode.toBuffer(qrUrl, {
       type: 'png',

@@ -96,14 +96,16 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
     }
   };
 
-  const tableOrders = (tableId: string) =>
-    orders.filter((o) => o.table_number === tableId && o.status !== "cancelled");
+  const tableOrders = (tableId: string, sessionId: string | null) =>
+    sessionId
+      ? orders.filter((o) => o.table_number === tableId && o.session_id === sessionId && o.status !== "cancelled")
+      : [];
 
-  const tableTotal = (tableId: string) =>
-    tableOrders(tableId).reduce((sum, o) => sum + o.total, 0);
+  const tableTotal = (tableId: string, sessionId: string | null) =>
+    tableOrders(tableId, sessionId).reduce((sum, o) => sum + o.total, 0);
 
-  const firstOrderTime = (tableId: string) => {
-    const os = tableOrders(tableId);
+  const firstOrderTime = (tableId: string, sessionId: string | null) => {
+    const os = tableOrders(tableId, sessionId);
     if (!os.length) return null;
     return os.reduce((earliest, o) =>
       new Date(o.created_at) < new Date(earliest.created_at) ? o : earliest
@@ -132,9 +134,9 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
           ) : tables.map((t) => {
             const isActive   = t.status === "active";
             const isDisabled = t.status === "disabled";
-            const orderCount = tableOrders(t.label).length;
-            const total      = tableTotal(t.label);
-            const startTime  = firstOrderTime(t.label);
+            const orderCount = tableOrders(t.label, t.active_session_id ?? null).length;
+            const total      = tableTotal(t.label, t.active_session_id ?? null);
+            const startTime  = firstOrderTime(t.label, t.active_session_id ?? null);
             const isPaid     = isActive && total > 0 && (t.session_total_paid || 0) >= total;
 
             return (
@@ -326,9 +328,9 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
 
             <div className="modal-body" id="table-bill-body">
               {(() => {
-                const billOrders = tableOrders(billTable.label);
+                const billOrders = tableOrders(billTable.label, billTable.active_session_id ?? null);
                 const paidOrderIds = new Set(billPayments.flatMap((p) => p.order_ids));
-                const grandTotal = tableTotal(billTable.label);
+                const grandTotal = tableTotal(billTable.label, billTable.active_session_id ?? null);
                 const unpaid = grandTotal - (billTable.session_total_paid || 0);
 
                 if (billOrders.length === 0) return (
@@ -373,7 +375,7 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
 
             <div className="modal-footer">
               {(() => {
-                const grandTotal = tableTotal(billTable.label);
+                const grandTotal = tableTotal(billTable.label, billTable.active_session_id ?? null);
                 const unpaid = grandTotal - (billTable.session_total_paid || 0);
                 return (
                   <>

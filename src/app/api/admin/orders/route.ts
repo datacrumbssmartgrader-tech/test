@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         o.status, 
         o.total,
         o.billing_round,
+        o.session_id,
         o.placed_at as created_at,
         COALESCE(
           json_agg(

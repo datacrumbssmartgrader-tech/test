@@ -71,11 +71,17 @@ export default function DinePage() {
   useEffect(() => {
     const init = async () => {
       const params = new URLSearchParams(window.location.search);
-      const table = params.get("table");
-      const qr = params.get("token");
       const previewScreen = params.get("screen");
 
-      if (table) setTableNumber(table);
+      // Primary: token delivered via cookie from /api/scan/[token] redirect.
+      // Fallback: legacy QR codes still pointing at ?token=UUID continue to work.
+      const cookieToken = document.cookie
+        .split("; ")
+        .find((c) => c.startsWith("rw_qr_token="))
+        ?.split("=")[1] ?? null;
+      const qr = cookieToken ?? params.get("token");
+      if (cookieToken) document.cookie = "rw_qr_token=; Max-Age=0; Path=/";
+
       if (qr) setQrToken(qr);
 
       if (qr) {
@@ -88,6 +94,7 @@ export default function DinePage() {
           setActiveScreen("session-error");
           return;
         }
+        if (tableCheck.data?.label) setTableNumber(tableCheck.data.label);
       }
 
       const storedSessionId = sessionStorage.getItem("riwayat_session_id");
@@ -119,9 +126,6 @@ export default function DinePage() {
 
       if (storedTableId) {
         setTableId(storedTableId);
-      } else if (table) {
-        setTableId(table);
-        sessionStorage.setItem("riwayat_table_id", table);
       }
 
       setIsLoadingMenu(true);
