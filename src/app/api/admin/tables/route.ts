@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all tables with session info
+    // Get all visible tables with session info
     const tables = await sql`
-      SELECT 
+      SELECT
         rt.id,
         rt.label,
         rt.status,
@@ -36,10 +36,12 @@ export async function GET(request: NextRequest) {
         rt.active_session_id,
         rt.alert_active,
         rt.qr_regenerated_at,
+        rt.is_visible,
         rt.created_at,
         COALESCE(s.total_paid, 0) as session_total_paid
       FROM restaurant_tables rt
       LEFT JOIN sessions s ON rt.active_session_id = s.id
+      WHERE rt.is_visible = true
       ORDER BY rt.id ASC
     `;
 
@@ -53,6 +55,7 @@ export async function GET(request: NextRequest) {
       active_session_id: table.active_session_id,
       alert_active: table.alert_active,
       qr_regenerated_at: table.qr_regenerated_at,
+      is_visible: table.is_visible,
       created_at: table.created_at,
       session_total_paid: Number(table.session_total_paid || 0),
     }));

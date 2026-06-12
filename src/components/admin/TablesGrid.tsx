@@ -28,14 +28,17 @@ interface TablesGridProps {
 }
 
 export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridProps) {
-  const [tables, setTables]           = useState<Table[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
-  const [billTable, setBillTable]     = useState<Table | null>(null);
-  const [qrTable,   setQrTable]       = useState<Table | null>(null);
+  const [tables, setTables]             = useState<Table[]>([]);
+  const [isLoading, setIsLoading]       = useState(true);
+  const [billTable, setBillTable]       = useState<Table | null>(null);
+  const [qrTable,   setQrTable]         = useState<Table | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [qrLoading, setQrLoading]     = useState(false);
-  const [qrBust, setQrBust]           = useState(0);
+  const [qrLoading, setQrLoading]       = useState(false);
+  const [qrBust, setQrBust]             = useState(0);
   const [billPayments, setBillPayments] = useState<SessionPayment[]>([]);
+  const [addLoading, setAddLoading]     = useState(false);
+  const [removeLoading, setRemoveLoading] = useState(false);
+  const [countError, setCountError]     = useState<string | null>(null);
 
   useEffect(() => {
     if (!billTable?.active_session_id) { setBillPayments([]); return; }
@@ -51,6 +54,13 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
       setTables(list);
     }).finally(() => setIsLoading(false));
   }, [refreshTick]);
+
+  const refreshTables = async () => {
+    const r = await api.fetchAdminTables();
+    const data = r.data as any;
+    const list: Table[] = Array.isArray(data) ? data : (data?.tables ?? data?.items ?? []);
+    setTables(list);
+  };
 
   const updateStatus = async (id: string, status: string) => {
     setProcessingId(id);
@@ -83,16 +93,43 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
     try {
       const res = await api.regenerateAdminTableQR(tableId);
       if (res.status === 200) {
-        // Update qr_token in local state
         const newToken = (res.data as any).qr_token;
         setTables((prev) => prev.map((t) => t.id === tableId ? { ...t, qr_token: newToken } : t));
-        // Also update qrTable so modal reflects new token
         setQrTable((prev) => prev?.id === tableId ? { ...prev, qr_token: newToken } : prev);
-        // Force <img> reload by bumping bust key
         setQrBust((n) => n + 1);
       }
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  const handleAddTable = async () => {
+    setAddLoading(true);
+    setCountError(null);
+    try {
+      const res = await api.setTableCount(tables.length + 1);
+      if (res.status === 200) {
+        await refreshTables();
+      } else {
+        setCountError((res as any).error || 'Failed to add table');
+      }
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleRemoveTable = async () => {
+    setRemoveLoading(true);
+    setCountError(null);
+    try {
+      const res = await api.setTableCount(tables.length - 1);
+      if (res.status === 200) {
+        await refreshTables();
+      } else {
+        setCountError((res as any).error || 'Failed to remove table');
+      }
+    } finally {
+      setRemoveLoading(false);
     }
   };
 
@@ -128,115 +165,193 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
           Loading tables…
         </div>
       ) : (
-        <div className="tables-grid" id="tables-grid">
-          {tables.length === 0 ? (
-            <div style={{ color: "var(--clr-muted)", padding: "2rem" }}>No tables found</div>
-          ) : tables.map((t) => {
-            const isActive   = t.status === "active";
-            const isDisabled = t.status === "disabled";
-            const orderCount = tableOrders(t.label, t.active_session_id ?? null).length;
-            const total      = tableTotal(t.label, t.active_session_id ?? null);
-            const startTime  = firstOrderTime(t.label, t.active_session_id ?? null);
-            const isPaid     = isActive && total > 0 && (t.session_total_paid || 0) >= total;
+        <>
+          <div className="tables-grid" id="tables-grid">
+            {tables.length === 0 ? null : tables.map((t, idx) => {
+              const isActive   = t.status === "active";
+              const isDisabled = t.status === "disabled";
+              const isLast     = idx === tables.length - 1;
+              const orderCount = tableOrders(t.label, t.active_session_id ?? null).length;
+              const total      = tableTotal(t.label, t.active_session_id ?? null);
+              const startTime  = firstOrderTime(t.label, t.active_session_id ?? null);
+              const isPaid     = isActive && total > 0 && (t.session_total_paid || 0) >= total;
 
-            return (
-              <div
-                key={t.id}
-                className={`table-card ${isActive ? "active-table" : ""} ${isDisabled ? "disabled-table" : ""}`}
-              >
-                {t.alert_active && <div className="table-alert-dot"></div>}
-                {/* ── Header row: table ID + QR button ───────── */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: ".4rem" }}>
-                  <div className="table-id">{t.id}</div>
-                  <button
-                    title="View QR Code"
-                    onClick={() => { setQrTable(t); setQrBust((n) => n + 1); }}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: "2px 4px",
-                      borderRadius: "6px",
-                      color: "var(--clr-muted)",
-                      fontSize: "1rem",
-                      lineHeight: 1,
-                      transition: "color var(--trans)",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--clr-primary)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--clr-muted)")}
-                  >
-                    <i className="ri-qr-code-line"></i>
-                  </button>
-                </div>
+              return (
+                <div
+                  key={t.id}
+                  className={`table-card ${isActive ? "active-table" : ""} ${isDisabled ? "disabled-table" : ""}`}
+                  style={{ position: "relative" }}
+                >
+                  {t.alert_active && <div className="table-alert-dot"></div>}
 
-                <div className="table-status-row">
-                  <span className={`badge badge-table-${t.status}`}>
-                    {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
-                  </span>
-                  {isPaid && <span className="badge badge-paid">Paid</span>}
-                </div>
-
-                <div className="table-meta">
-                  {isActive && startTime ? (
-                    <>
-                      <div className="table-meta-row">
-                        <i className="ri-time-line"></i>
-                        {sessionDuration(startTime)}
-                      </div>
-                      <div className="table-meta-row">
-                        <i className="ri-receipt-line"></i>
-                        {orderCount} order{orderCount !== 1 ? "s" : ""} · PKR {total.toLocaleString()}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="table-meta-row">—</div>
-                  )}
-                </div>
-
-                <div className="table-card-actions">
-                  {isActive && (
+                  {/* ── Remove button — top-left badge (last card only) ── */}
+                  {isLast && tables.length > 1 && (
                     <button
-                      data-action="view-bill"
-                      onClick={() => setBillTable(t)}
-                      disabled={processingId === t.id}
+                      title={isActive ? "Cannot remove an active table" : "Remove this table"}
+                      onClick={handleRemoveTable}
+                      disabled={removeLoading || isActive}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        left: "8px",
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        background: isActive ? "var(--clr-border-l)" : "#e74c3c",
+                        border: "none",
+                        cursor: removeLoading || isActive ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: ".8rem",
+                        lineHeight: 1,
+                        zIndex: 2,
+                        opacity: isActive ? 0.45 : 1,
+                        transition: "opacity var(--trans), background var(--trans)",
+                      }}
                     >
-                      View Bill
+                      {removeLoading
+                        ? <i className="ri-loader-4-line"></i>
+                        : <i className="ri-subtract-line"></i>}
                     </button>
                   )}
-                  {isActive && (
+
+                  {/* ── Header row: table ID + QR button ── */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: ".4rem" }}>
+                    <div className="table-id">{t.id}</div>
                     <button
-                      data-action="reset-table"
-                      className="danger"
-                      onClick={() => handleReset(t.id)}
-                      disabled={processingId === t.id}
+                      title="View QR Code"
+                      onClick={() => { setQrTable(t); setQrBust((n) => n + 1); }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: "2px 4px",
+                        borderRadius: "6px",
+                        color: "var(--clr-muted)",
+                        fontSize: "1rem",
+                        lineHeight: 1,
+                        transition: "color var(--trans)",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--clr-primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--clr-muted)")}
                     >
-                      Reset
+                      <i className="ri-qr-code-line"></i>
                     </button>
-                  )}
-                  {!isDisabled && !isActive && (
-                    <button
-                      data-action="disable-table"
-                      className="danger"
-                      onClick={() => updateStatus(t.id, "disabled")}
-                      disabled={processingId === t.id}
-                    >
-                      Disable
-                    </button>
-                  )}
-                  {isDisabled && (
-                    <button
-                      data-action="enable-table"
-                      onClick={() => updateStatus(t.id, "empty")}
-                      disabled={processingId === t.id}
-                    >
-                      Enable
-                    </button>
-                  )}
+                  </div>
+
+                  <div className="table-status-row">
+                    <span className={`badge badge-table-${t.status}`}>
+                      {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
+                    </span>
+                    {isPaid && <span className="badge badge-paid">Paid</span>}
+                  </div>
+
+                  <div className="table-meta">
+                    {isActive && startTime ? (
+                      <>
+                        <div className="table-meta-row">
+                          <i className="ri-time-line"></i>
+                          {sessionDuration(startTime)}
+                        </div>
+                        <div className="table-meta-row">
+                          <i className="ri-receipt-line"></i>
+                          {orderCount} order{orderCount !== 1 ? "s" : ""} · PKR {total.toLocaleString()}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="table-meta-row">—</div>
+                    )}
+                  </div>
+
+                  <div className="table-card-actions">
+                    {isActive && (
+                      <button
+                        data-action="view-bill"
+                        onClick={() => setBillTable(t)}
+                        disabled={processingId === t.id}
+                      >
+                        View Bill
+                      </button>
+                    )}
+                    {isActive && (
+                      <button
+                        data-action="reset-table"
+                        className="danger"
+                        onClick={() => handleReset(t.id)}
+                        disabled={processingId === t.id}
+                      >
+                        Reset
+                      </button>
+                    )}
+                    {!isDisabled && !isActive && (
+                      <button
+                        data-action="disable-table"
+                        className="danger"
+                        onClick={() => updateStatus(t.id, "disabled")}
+                        disabled={processingId === t.id}
+                      >
+                        Disable
+                      </button>
+                    )}
+                    {isDisabled && (
+                      <button
+                        data-action="enable-table"
+                        onClick={() => updateStatus(t.id, "empty")}
+                        disabled={processingId === t.id}
+                      >
+                        Enable
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+
+            {/* ── Add table card ── */}
+            <button
+              className="table-card"
+              onClick={handleAddTable}
+              disabled={addLoading}
+              title="Add a table"
+              style={{
+                background: "none",
+                border: "2px dashed var(--clr-border-l)",
+                cursor: addLoading ? "wait" : "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                color: "var(--clr-muted)",
+                transition: "border-color var(--trans), color var(--trans)",
+                minHeight: "140px",
+              }}
+              onMouseEnter={(e) => {
+                if (!addLoading) {
+                  e.currentTarget.style.borderColor = "var(--clr-primary)";
+                  e.currentTarget.style.color = "var(--clr-primary)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--clr-border-l)";
+                e.currentTarget.style.color = "var(--clr-muted)";
+              }}
+            >
+              {addLoading
+                ? <i className="ri-loader-4-line" style={{ fontSize: "1.5rem" }}></i>
+                : <i className="ri-add-line" style={{ fontSize: "1.5rem" }}></i>}
+              <span style={{ fontSize: ".78rem" }}>Add Table</span>
+            </button>
+          </div>
+
+          {countError && (
+            <div style={{ marginTop: ".75rem", fontSize: ".82rem", color: "var(--clr-danger, #e74c3c)" }}>
+              <i className="ri-error-warning-line"></i> {countError}
+            </div>
+          )}
+        </>
       )}
 
       {/* ═══ QR Code Modal ═══════════════════════════════════════════ */}
@@ -266,7 +381,6 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
                 Customers scan this code to start a session at this table.
               </p>
 
-              {/* QR image — fetched as PNG from API */}
               <div style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -299,12 +413,23 @@ export default function TablesGrid({ orders = [], refreshTick = 0 }: TablesGridP
                 onClick={() => handleRegenerateQR(qrTable.id)}
                 disabled={qrLoading}
                 title="Invalidates old QR — active sessions are unaffected"
+                style={{ fontSize: ".78rem", padding: "5px 10px" }}
               >
                 {qrLoading
                   ? <><i className="ri-loader-4-line"></i> Regenerating…</>
-                  : <><i className="ri-refresh-line"></i> Regenerate QR</>}
+                  : <><i className="ri-refresh-line"></i> Regenerate</>}
               </button>
-              <button className="btn-ghost" onClick={() => setQrTable(null)}>Close</button>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <a
+                  href={`${api.getTableQRImageUrl(qrTable.id)}?v=${qrBust}`}
+                  download={`qr-${qrTable.id}.png`}
+                  className="btn-primary"
+                  style={{ textDecoration: "none", fontSize: ".78rem", padding: "5px 10px" }}
+                >
+                  <i className="ri-download-2-line"></i> Download
+                </a>
+                <button className="btn-ghost" onClick={() => setQrTable(null)} style={{ fontSize: ".78rem", padding: "5px 10px" }}>Close</button>
+              </div>
             </div>
           </div>
         </div>

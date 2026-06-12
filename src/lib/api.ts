@@ -149,6 +149,10 @@ export async function resetAdminTable(tableId: string): Promise<ApiResponse<{ su
   return request<{ success: boolean }>('POST', `/api/admin/tables/${tableId}/reset`);
 }
 
+export async function setTableCount(count: number): Promise<ApiResponse<{ count: number }>> {
+  return request<{ count: number }>('PATCH', '/api/admin/tables/count', { count });
+}
+
 // QR image URL (served as PNG directly — use as <img src=...>)
 export function getTableQRImageUrl(tableId: string): string {
   return `/api/admin/tables/${tableId}/qr`;

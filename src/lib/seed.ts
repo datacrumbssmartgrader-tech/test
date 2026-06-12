@@ -20,18 +20,27 @@ async function seed() {
     `;
     console.log("✅ Admin created:", admin);
 
-    // 3. Create 12 restaurant tables
+    // 3. Create 12 visible restaurant tables + 12 hidden reserve tables
     console.log("🪑 Creating restaurant tables...");
     for (let i = 1; i <= 12; i++) {
       const tableId = `T${String(i).padStart(2, "0")}`;
       const label = `Table ${i}`;
       await sql`
-        INSERT INTO restaurant_tables (id, label, status)
-        VALUES (${tableId}, ${label}, 'empty')
+        INSERT INTO restaurant_tables (id, label, status, is_visible)
+        VALUES (${tableId}, ${label}, 'empty', true)
         ON CONFLICT DO NOTHING;
       `;
     }
-    console.log("✅ Created 12 tables (T01-T12)");
+    for (let i = 13; i <= 24; i++) {
+      const tableId = `T${String(i).padStart(2, "0")}`;
+      const label = `Table ${i}`;
+      await sql`
+        INSERT INTO restaurant_tables (id, label, status, is_visible)
+        VALUES (${tableId}, ${label}, 'disabled', false)
+        ON CONFLICT DO NOTHING;
+      `;
+    }
+    console.log("✅ Created 12 visible tables (T01-T12) + 12 hidden reserve tables (T13-T24)");
 
     // 4. Seed menu items
     console.log("🍽️ Seeding menu items...");

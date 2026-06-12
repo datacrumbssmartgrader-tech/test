@@ -95,11 +95,12 @@ suite.test('POST /api/orders - Place order for session', async () => {
 // Order Status Updates
 suite.test('GET /api/sessions/:session_id/orders - Retrieve session orders', async () => {
   if (!sessionId) throw new Error('sessionId not set');
-  
+
   const response = await request('GET', `/api/sessions/${sessionId}/orders`, {});
   if (response.status !== 200) throw new Error(`Expected 200, got ${response.status}`);
-  if (!Array.isArray(response.data)) throw new Error('Should return array');
-  if (response.data.length === 0) throw new Error('Should have at least one order');
+  // Route returns { closed_at, orders } shape (Issue 15)
+  if (!response.data || !Array.isArray(response.data.orders)) throw new Error('Should return { orders: [] }');
+  if (response.data.orders.length === 0) throw new Error('Should have at least one order');
 });
 
 suite.test('PATCH /api/orders/:id - Update order status to "kitchen"', async () => {

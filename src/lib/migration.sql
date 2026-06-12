@@ -55,6 +55,7 @@ CREATE TABLE restaurant_tables (
   alert_active BOOLEAN DEFAULT false,
   qr_token UUID UNIQUE DEFAULT gen_random_uuid(),
   qr_regenerated_at TIMESTAMPTZ,
+  is_visible BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 

@@ -177,8 +177,11 @@ export default function PaymentsTab({ orders = [], refreshTick = 0 }: PaymentsTa
     }
   };
 
-  const handleExport = async () => {
-    await api.exportPayments();
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('from', dateFrom);
+    if (dateTo) params.set('to', dateTo);
+    window.location.href = `/api/admin/payments/export/excel${params.toString() ? `?${params}` : ''}`;
   };
 
   return (
@@ -218,6 +221,19 @@ export default function PaymentsTab({ orders = [], refreshTick = 0 }: PaymentsTa
         <div>
           <h1 className="section-title">Items Sold</h1>
           <p className="section-sub">Top 3 sold items this period</p>
+        </div>
+        <div className="section-actions">
+          <button
+            className="btn-primary"
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (dateFrom) params.set('from', dateFrom);
+              if (dateTo) params.set('to', dateTo);
+              window.location.href = `/api/admin/orders/items-sold/export/excel${params.toString() ? `?${params}` : ''}`;
+            }}
+          >
+            <i className="ri-file-excel-line"></i> Export
+          </button>
         </div>
       </div>
 

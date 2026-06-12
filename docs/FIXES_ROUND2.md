@@ -6,6 +6,10 @@
 
 | # | Issue | Status |
 |---|-------|--------|
+| 21 | Items Sold export (Excel) in Payments tab | ✅ Done |
+| 20 | Inline +/− table controls — dashed + card and red − badge replacing number-input panel | ✅ Done |
+| 19 | Table count management — dynamic table creation, no upper bound | ✅ Done |
+| 18 | QR download button + smaller modal buttons | ✅ Done |
 | 17 | Table card shows previous session's orders after reset + new session | ✅ Done |
 | 16 | QR token UUID exposed in dine page URL (`?token=UUID`) | ✅ Done |
 | 1a | `useOrders.ts` reads `id` instead of `order_id` from POST response | ✅ Done |
@@ -1038,6 +1042,123 @@ Used a server-side redirect instead of the short_token approach above. A new API
 **`src/app/api/admin/tables/[id]/qr/route.ts`** — QR URL changed from `` `${baseUrl}/dine?table=${tableId}&token=${table.qr_token}` `` to `` `${baseUrl}/api/scan/${table.qr_token}` ``.
 
 **`src/app/dine/page.tsx`** — Token reading changed from `params.get("token")` to `document.cookie` lookup for `rw_qr_token` (consumed immediately after reading), with `params.get("token")` fallback for old printed QR codes. `setTableNumber` now uses `tableCheck.data.label` from the API response instead of the URL param.
+
+---
+
+## Issue 21 — Items Sold Export (Excel) in Payments Tab
+
+### What
+The Payments tab had an "Items Sold" table showing the top 3 items this period with qty and revenue. There was no way to export this data. Orders and Payments already had Export buttons; Items Sold did not.
+
+### Fix
+
+**New `src/app/api/admin/orders/items-sold/export/excel/route.ts`**
+GET endpoint that queries `order_items → orders → menu_items`, groups by item name, sums qty and revenue. Accepts optional `?from=YYYY-MM-DD&to=YYYY-MM-DD` query params (matching the Payments tab date filter). Returns an XLSX file.
+
+**`src/components/admin/PaymentsTab.tsx`** — Added Export button to the Items Sold section header. Clicking it navigates to the export URL via `window.location.href`, passing the currently-selected date range as query params so the exported sheet matches what's on screen.
+
+### Changes Made ✅
+
+**New `src/app/api/admin/orders/items-sold/export/excel/route.ts`** — SQL: `SELECT mi.name, SUM(oi.qty), SUM(oi.qty * oi.price) FROM order_items oi JOIN orders o JOIN menu_items mi WHERE o.status != 'cancelled' AND date filters GROUP BY mi.name ORDER BY qty_sold DESC`. Returns xlsx.
+
+**`src/components/admin/PaymentsTab.tsx`** — Export button in Items Sold header; uses `window.location.href` with `?from=&to=` params derived from `dateFrom`/`dateTo` state.
+
+---
+
+## Issue 20 — Inline +/− Table Controls
+
+### What
+The "Manage Tables" panel (number input + Apply button) was replaced with direct inline controls embedded in the tables grid itself:
+- A dashed `+` card at the end of the grid to add one table at a time.
+- A red circular `−` badge on the top-left of the last table card to remove/hide it one at a time.
+
+### Design
+
+- **+ card**: A `<button>` styled as `table-card` with `border: 2px dashed`, centered `ri-add-line` icon and "Add Table" label. Hover turns it primary-colour. Sits inside the same `tables-grid` div after all real cards.
+- **− badge**: `position: absolute; top: 8px; left: 8px` red circle (22×22px) on the last table card. Grey + `opacity: 0.45` when the table is Active (can't remove). Hidden when only 1 table remains.
+- Both call `api.setTableCount(tables.length ± 1)` then re-fetch the table list.
+- Errors (e.g. last table is active) shown inline below the grid.
+
+### Changes Made ✅
+
+**`src/components/admin/TablesGrid.tsx`**
+- Removed `showCountPanel`, `countInput`, `countLoading` state and `handleSetCount`.
+- Removed "Manage Tables" button and count panel JSX.
+- Added `addLoading`, `removeLoading` state.
+- Added `handleAddTable` / `handleRemoveTable` (each calls `api.setTableCount` then `refreshTables`).
+- `.map((t) =>` → `.map((t, idx) =>` to detect last card.
+- Last card gets `position: relative` + absolute-positioned red `−` button (top-left).
+- Dashed `+` card appended inside `tables-grid` after all real cards.
+- Inline `countError` shown below the grid.
+
+---
+
+## Issue 18 — QR Code Download Button in Modal
+
+### What
+Admin opens a table's QR modal and wants to save the QR image to disk (for printing, sharing, etc.). Currently the modal only has Regenerate and Close buttons.
+
+### Fix
+
+**File: `src/components/admin/TablesGrid.tsx`** — QR modal footer
+
+Add a `<a download>` anchor between the Regenerate and Close buttons:
+
+```tsx
+<a
+  href={`${api.getTableQRImageUrl(qrTable.id)}?v=${qrBust}`}
+  download={`qr-${qrTable.id}.png`}
+  className="btn-primary"
+  style={{ textDecoration: "none" }}
+>
+  <i className="ri-download-2-line"></i> Download
+</a>
+```
+
+Same-origin request — JWT cookie is sent automatically. The `download` attribute triggers browser save. The `?v=${qrBust}` cache-buster ensures the downloaded image matches the currently-displayed QR (important after regeneration). No backend changes required.
+
+### Changes Made ✅
+
+**`src/components/admin/TablesGrid.tsx`** — QR modal footer: wrapped Close button in a flex div alongside a new Download anchor. Download link targets the QR PNG route with cache-buster, uses `download="qr-T0N.png"` for the filename.
+
+---
+
+## Issue 19 — Table Count Management
+
+### What
+The restaurant has exactly 12 fixed tables. Admin needs to expand or contract the visible table set without manual DB edits. Increasing the count shows previously-hidden reserve tables (in Disabled state; admin enables them manually). Decreasing hides the last N empty/disabled tables — their QR tokens and all credentials are preserved for when they are re-shown.
+
+### Design
+
+- `is_visible` boolean column on `restaurant_tables` (default `true`).
+- Reserve pool: T13–T24 pre-seeded with `is_visible = false`, `status = 'disabled'`.
+- Admin tables list (`GET /api/admin/tables`) filters `WHERE is_visible = true`.
+- New `PATCH /api/admin/tables/count` endpoint sets visibility with **no upper bound** — when the pre-seeded pool is exhausted, new table rows are created in the DB on demand.
+- UI: inline `+` card and `−` badge directly in the tables grid (see Issue 20).
+
+### Rules
+
+- **Increase**: next N hidden tables become visible (`status = 'disabled'`); if pool exhausted, new rows created (T25, T26, …).
+- **Decrease**: last N visible tables become hidden — blocked if any have `status = 'active'`.
+- No upper limit; minimum 1.
+
+### Fix
+
+**`src/lib/migration.sql`** — Added `is_visible BOOLEAN DEFAULT true` column to `CREATE TABLE restaurant_tables`.
+
+**`src/lib/seed.ts`** — Seeds T01–T12 with `is_visible = true`, then T13–T24 as reserve with `is_visible = false, status = 'disabled'`.
+
+**`src/app/api/admin/tables/route.ts`** — Added `WHERE rt.is_visible = true` to the SELECT and `is_visible` to the response shape.
+
+**`src/app/api/admin/tables/count/route.ts`** — `PATCH` handler: no upper bound check; reveals hidden tables first, then INSERTs new rows when pool is empty; hides tail tables (blocked on active). Emits `table:update` SSE.
+
+**`src/lib/api.ts`** — Added `setTableCount(count)` calling `PATCH /api/admin/tables/count`.
+
+**`src/scripts/migrate-is-visible.js`** — One-time incremental migration script: `ALTER TABLE restaurant_tables ADD COLUMN IF NOT EXISTS is_visible BOOLEAN DEFAULT true` + seeds T13–T24. Run once against the live DB without dropping tables.
+
+### Changes Made ✅
+
+Credential preservation: hiding sets `is_visible = false` only — `qr_token`, `label`, `id` are untouched, so re-showing restores the same QR code. UI controls moved to inline +/− (Issue 20).
 
 ---
 
